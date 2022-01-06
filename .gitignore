@@ -1,4 +1,5 @@
-./stub
-./server
-./.idea
+stub/build
+server/build
+.idea
 .gradle
+protos/build
