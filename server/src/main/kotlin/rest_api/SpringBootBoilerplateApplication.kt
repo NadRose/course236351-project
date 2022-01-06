@@ -1,4 +1,4 @@
-package com.example.api
+package rest_api
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
