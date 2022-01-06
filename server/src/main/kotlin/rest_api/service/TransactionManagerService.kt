@@ -65,7 +65,7 @@ class TransactionManagerService() {
 
 
     fun getUTxOs(address: String): List<UTxO> {
-        return listOf(UTxO("124", "1243"))
+        return this.UTxOPool[address].orEmpty() //TODO fix weird "amount" field name in return value
     }
 
     fun getTxHistory(address: String, limit: Optional<Int>): List<Transaction> {
