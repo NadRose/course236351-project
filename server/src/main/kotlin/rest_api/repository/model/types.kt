@@ -1,25 +1,25 @@
 package rest_api.repository.model
 
-import java.math.BigInteger
 import java.util.*
 
 data class Transfer (
-    val address: BigInteger,
+    val address: String,
     val coins: ULong
 )
 
 data class UTxO(
-    val txId: BigInteger,
-    val address: BigInteger
+    val txId: String,
+    val address: String,
+    val amount: Long = 0
 )
 
 data class Transaction(
-    val txId: BigInteger,
-    val inputs: List<UTxO>,
-    val outputs: List<Transfer>
+    val txId: String,
+    val inputs: MutableList<UTxO>,
+    val outputs: MutableList<Transfer>
 )
 
-data class RequestBodyType(
-    val address: BigInteger,
-    val payload: Optional<Any>
+data class UTxOPoolItem(
+    val txId: String,
+    val amount: Long
 )

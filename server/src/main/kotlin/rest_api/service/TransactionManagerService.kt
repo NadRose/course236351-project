@@ -1,33 +1,53 @@
 package rest_api.service
 
 import org.springframework.stereotype.Service
-import rest_api.repository.model.RequestBodyType
 import rest_api.repository.model.Transaction
+import rest_api.repository.model.Transfer
 import rest_api.repository.model.UTxO
-import java.math.BigInteger
+import rest_api.repository.model.UTxOPoolItem
 import java.util.*
 
 @Service
 class TransactionManagerService(){
-    fun submitTransaction(body: RequestBodyType): BigInteger {
+    private var UTxOPool: HashMap<String, MutableList<UTxO>> = hashMapOf()
+    private var MissingUTxOPool: HashMap<String, MutableList<UTxO>> = hashMapOf()
 
-        return BigInteger.valueOf(1)
+
+    fun submitTransaction(transaction: Transaction, address: String): String {
+        val txId = UUID.randomUUID()
+        for (input in transaction.inputs){
+            if (this.UTxOPool[input.address]?.remove(input) == false){
+                this.MissingUTxOPool.getOrPut(input.address) {
+                    mutableListOf() // TODO what happens if leader crashes in here? how will the followers know he crashed and process the request?
+                }.add(input) //TODO check if this weird function works
+//                if (this.MissingUTxOPool.containsKey(input.address)){
+//                    this.MissingUTxOPool[input.address]?.add(input)
+//                }
+//                else {
+//                    this.MissingUTxOPool[input.address] = mutableListOf(input)
+//                }
+            }
+        }
+        val tx = Transaction(txId.toString(), transaction.inputs, transaction.outputs)
+        //TODO Submit tx to ledger using paxos/atomic broadcast or some shit.
+
+        return txId.toString()
     }
 
-    fun submitAtomicTxList(body: RequestBodyType): BigInteger {
-        return BigInteger.valueOf(1)
+    fun submitAtomicTxList(transactionList: List<Transaction>, address: String): String {
+        return "1"
     }
 
-    fun makeTransfer(body: RequestBodyType): String {
-        return body.address.toString()
+    fun makeTransfer(transfer: Transfer, address: String): String {
+        return address
     }
 
-    fun getUTxOs(body: RequestBodyType): List<UTxO> {
-        return listOf( UTxO(BigInteger.valueOf(124), BigInteger.valueOf(1243)))
+    fun getUTxOs(address: String): List<UTxO> {
+        return listOf( UTxO("124", "1243"))
     }
 
-    fun getTxHistory(body: RequestBodyType, limit: Optional<Int>): List<Transaction> {
-        return listOf( Transaction(BigInteger.valueOf(124), listOf(), listOf()))
+    fun getTxHistory(address: String, limit: Optional<Int>): List<Transaction> {
+        return listOf( Transaction("124", mutableListOf(), mutableListOf()))
     }
 
     fun getLedgerHistory(): List<Transaction> {
