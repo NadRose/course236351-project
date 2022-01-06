@@ -9,7 +9,10 @@ import java.util.*
 
 @Service
 class TransactionManagerService() {
-    private var UTxOPool: HashMap<String, MutableList<UTxO>> = hashMapOf()
+    private var UTxOPool: HashMap<String, MutableList<UTxO>> = hashMapOf(
+        Pair("1", mutableListOf(UTxO("1", "1", 5u))),
+        Pair("2", mutableListOf(UTxO("2", "2", 7u)))
+    )
     private var MissingUTxOPool: HashMap<String, MutableList<UTxO>> = hashMapOf()
 
 
@@ -19,13 +22,7 @@ class TransactionManagerService() {
             if (this.UTxOPool[input.address]?.remove(input) == false) {
                 this.MissingUTxOPool.getOrPut(input.address) {
                     mutableListOf() // TODO what happens if leader crashes in here? how will the followers know he crashed and process the request?
-                }.add(input) //TODO check if this weird function works
-//                if (this.MissingUTxOPool.containsKey(input.address)){
-//                    this.MissingUTxOPool[input.address]?.add(input)
-//                }
-//                else {
-//                    this.MissingUTxOPool[input.address] = mutableListOf(input)
-//                }
+                }.add(input)
             }
         }
         val tx = Transaction(txId.toString(), transaction.inputs, transaction.outputs)
@@ -44,26 +41,28 @@ class TransactionManagerService() {
         val inputs: MutableList<UTxO> = mutableListOf()
         var curSum: ULong = 0u
 
-        if (this.UTxOPool.containsKey(address)) {
-            for (utxo in this.UTxOPool[address]!!) {
-                if (curSum < transfer.coins) {
-                    inputs.add(utxo)
-                    curSum += utxo.amount
-                    this.UTxOPool[address]?.remove(utxo)
-                } else if (curSum > transfer.coins){
-                    this.UTxOPool[address]?.add(UTxO(txId.toString(), address, curSum-transfer.coins))
-                    break
-                }
-            }
-        }
-        else {
+        if (!this.UTxOPool.containsKey(address)) {
             return "Operation failed! Not enough available UTxOs."
         }
+
+        val utxosToRemove: MutableList<UTxO> = mutableListOf()
+        for (utxo in this.UTxOPool[address].orEmpty()) {
+            if (curSum < transfer.coins) {
+                inputs.add(utxo)
+                curSum += utxo.amount
+                utxosToRemove.add(utxo)
+            } else break
+        }
+        if (curSum > transfer.coins) {
+            this.UTxOPool[address]?.add(UTxO(txId.toString(), address, curSum - transfer.coins))
+        }
+        this.UTxOPool[address]?.removeAll(utxosToRemove)
 
         val tx = Transaction(txId.toString(), inputs, outputs)
         //TODO Submit tx to ledger using paxos/atomic broadcast or some shit.
         return txId.toString()
     }
+
 
     fun getUTxOs(address: String): List<UTxO> {
         return listOf(UTxO("124", "1243"))
