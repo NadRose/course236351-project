@@ -10,7 +10,7 @@ data class Transfer (
 data class UTxO(
     val txId: String,
     val address: String,
-    val amount: Long = 0
+    val amount: ULong = 0u
 )
 
 data class Transaction(
