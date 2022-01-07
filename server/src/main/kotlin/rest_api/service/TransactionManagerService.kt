@@ -17,6 +17,9 @@ class TransactionManagerService() {
 
 
     fun submitTransaction(transaction: Transaction, address: String): String {
+//        if (!isResponsibleForAddress(address)) {
+//            // TODO: send gRPC to address corresponding shard
+//        }
         val txId = if (transaction.txId == "0") UUID.randomUUID() else transaction.txId
         for (input in transaction.inputs) {
             if (this.UTxOPool[input.address]?.remove(input) == false) {
@@ -32,10 +35,23 @@ class TransactionManagerService() {
     }
 
     fun submitAtomicTxList(transactionList: List<Transaction>, address: String): String {
-        return "1"
+        // We assume clients are honest and therefore support "zero transactions list" (all tx-id's are "0")
+        // or "Non-zero transaction list (all tx-id's are valid uuid),
+        // under the assumption that all input utxo's are valid and unrelated - meaning can be submitted atomically
+        if (isValidTxList(transactionList)) {
+            transactionList.forEach {
+                val address = it.inputs[0].address
+                // TODO: send gRPC to address corresponding shard
+            }
+            return "Success submitting Tx list"
+        }
+        return "Failed to submit Tx list"
     }
 
     fun makeTransfer(transfer: Transfer, address: String): String {
+//        if (!isResponsibleForAddress(address)) {
+//            // TODO: send gRPC to address corresponding shard
+//        }
         val txId = UUID.randomUUID()
         val outputs = mutableListOf(transfer)
         val inputs: MutableList<UTxO> = mutableListOf()
@@ -72,8 +88,24 @@ class TransactionManagerService() {
         return listOf(Transaction("124", mutableListOf(), mutableListOf()))
     }
 
-    fun getLedgerHistory(): List<Transaction> {
+    fun getLedgerHistory(limit: Optional<Int>): List<Transaction> {
         return listOf()
     }
 
+}
+
+fun isValidTxList(transactionList: List<Transaction>): Boolean {
+    val isZeroTxList = transactionList[0].txId == "0"
+    val txIdSet = mutableSetOf<String>()
+    transactionList.forEach { transaction ->
+        if (isZeroTxList) {
+            if (transaction.txId != "0") return false
+        } else {
+            if (transaction.txId == "0" || !txIdSet.add(transaction.txId)) return false
+            transaction.inputs.forEach { input ->
+                if (!txIdSet.add(input.txId)) return false
+            }
+        }
+    }
+    return true;
 }

@@ -28,7 +28,7 @@ class TransactionManagerController(private val transactionManagerService: Transa
     @GetMapping("/tx/history/{address}/{limit}")
     fun getTxHistory(@PathVariable address: String, @PathVariable limit: Optional<Int>): List<Transaction> = transactionManagerService.getTxHistory(address, limit)
 
-    @GetMapping("/history")
-    fun getLedgerHistory(): List<Transaction> = transactionManagerService.getLedgerHistory()
+    @GetMapping("/history/{limit}")
+    fun getLedgerHistory(@PathVariable limit: Optional<Int>): List<Transaction> = transactionManagerService.getLedgerHistory(limit)
 
 }
