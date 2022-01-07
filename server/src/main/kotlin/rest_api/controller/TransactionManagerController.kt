@@ -1,13 +1,8 @@
 package rest_api.controller
 
+import org.springframework.web.bind.annotation.*
 import rest_api.repository.model.Transaction
 import rest_api.repository.model.UTxO
-import java.util.Optional
-import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestBody
 import rest_api.repository.model.Transfer
 import rest_api.service.TransactionManagerService
 
@@ -25,10 +20,10 @@ class TransactionManagerController(private val transactionManagerService: Transa
     @GetMapping("/utxo/{address}")
     fun getUTxOs(@PathVariable address: String): List<UTxO> = transactionManagerService.getUTxOs(address)
 
-    @GetMapping("/tx/history/{address}/{limit}")
-    fun getTxHistory(@PathVariable address: String, @PathVariable limit: Optional<Int>): List<Transaction> = transactionManagerService.getTxHistory(address, limit)
+    @GetMapping("/tx/history/{address}")
+    fun getTxHistory(@PathVariable address: String, @RequestParam limit: Int?): List<Transaction> = transactionManagerService.getTxHistory(address, limit)
 
-    @GetMapping("/history/{limit}")
-    fun getLedgerHistory(@PathVariable limit: Optional<Int>): List<Transaction> = transactionManagerService.getLedgerHistory(limit)
+    @GetMapping("/history/")
+    fun getLedgerHistory( @RequestParam limit: Int?): List<Transaction> = transactionManagerService.getLedgerHistory(limit)
 
 }

@@ -1,17 +1,50 @@
 package rest_api.service
 
 import org.springframework.stereotype.Service
+import rest_api.repository.model.TimedTransaction
 import rest_api.repository.model.Transaction
 import rest_api.repository.model.Transfer
 import rest_api.repository.model.UTxO
-import rest_api.repository.model.UTxOPoolItem
 import java.util.*
+import kotlin.collections.HashMap
+
+val transactionsMap: HashMap<String, MutableSet<TimedTransaction>> = hashMapOf(
+    Pair(
+        "1",
+        mutableSetOf(
+            TimedTransaction(
+                txId = "1",
+                inputs = mutableListOf(
+                    UTxO(
+                        "0",
+                        "0"
+                    )
+                ),
+                outputs = mutableListOf(
+                    Transfer(
+                        "1",
+                        20u
+                    ),
+                    Transfer(
+                        "2",
+                        12u
+                    ),
+                    Transfer(
+                        "0",
+                        ULong.MAX_VALUE - 32u
+                    )
+                ),
+                timestamp = System.currentTimeMillis()
+            ),
+        )
+    )
+)
 
 @Service
 class TransactionManagerService() {
     private var UTxOPool: HashMap<String, MutableList<UTxO>> = hashMapOf(
-        Pair("1", mutableListOf(UTxO("1", "1", 5u))),
-        Pair("2", mutableListOf(UTxO("2", "2", 7u)))
+        Pair("1", mutableListOf(UTxO("1", "1"))),
+        Pair("2", mutableListOf(UTxO("2", "2"))),
     )
     private var MissingUTxOPool: HashMap<String, MutableList<UTxO>> = hashMapOf()
 
@@ -65,47 +98,40 @@ class TransactionManagerService() {
         for (utxo in this.UTxOPool[address].orEmpty()) {
             if (curSum < transfer.coins) {
                 inputs.add(utxo)
-                curSum += utxo.amount
+                curSum += getAmount(utxo)
                 utxosToRemove.add(utxo)
             } else break
         }
         if (curSum > transfer.coins) {
-            this.UTxOPool[address]?.add(UTxO(txId.toString(), address, curSum - transfer.coins))
+            this.UTxOPool[address]?.add(UTxO(txId.toString(), address))
         }
         this.UTxOPool[address]?.removeAll(utxosToRemove)
 
-        val tx = Transaction(txId.toString(), inputs, outputs)
+        val tx = TimedTransaction(txId.toString(), inputs, outputs, System.currentTimeMillis())
+        transactionsMap.getOrPut(address) {
+            mutableSetOf()
+        }.add(tx)
+
         //TODO Submit tx to ledger using paxos/atomic broadcast or some shit.
         return txId.toString()
     }
 
 
     fun getUTxOs(address: String): List<UTxO> {
-        return this.UTxOPool[address].orEmpty() //TODO fix weird "amount" field name in return value
+        return this.UTxOPool[address].orEmpty()
     }
 
-    fun getTxHistory(address: String, limit: Optional<Int>): List<Transaction> {
-        return listOf(Transaction("124", mutableListOf(), mutableListOf()))
+    fun getTxHistory(address: String, limit: Int?): List<TimedTransaction> {
+        val sortedList = transactionsMap[address]?.sortedBy { it.timestamp }
+        limit?.let {
+            sortedList?.take(limit)
+        }
+        return sortedList ?: mutableListOf()
     }
 
-    fun getLedgerHistory(limit: Optional<Int>): List<Transaction> {
+    fun getLedgerHistory(limit: Int?): List<Transaction> {
+        // TODO: Read ledger from consensus mechanism or some shit.
         return listOf()
     }
-
 }
 
-fun isValidTxList(transactionList: List<Transaction>): Boolean {
-    val isZeroTxList = transactionList[0].txId == "0"
-    val txIdSet = mutableSetOf<String>()
-    transactionList.forEach { transaction ->
-        if (isZeroTxList) {
-            if (transaction.txId != "0") return false
-        } else {
-            if (transaction.txId == "0" || !txIdSet.add(transaction.txId)) return false
-            transaction.inputs.forEach { input ->
-                if (!txIdSet.add(input.txId)) return false
-            }
-        }
-    }
-    return true;
-}
