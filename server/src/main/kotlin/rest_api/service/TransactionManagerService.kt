@@ -8,10 +8,10 @@ import rest_api.repository.model.UTxO
 import java.util.*
 import kotlin.collections.HashMap
 
-val transactionsMap: HashMap<String, MutableSet<TimedTransaction>> = hashMapOf(
+val transactionsMap: HashMap<String, SortedSet<TimedTransaction>> = hashMapOf(
     Pair(
         "1",
-        mutableSetOf(
+        sortedSetOf(
             TimedTransaction(
                 txId = "1",
                 inputs = mutableListOf(
@@ -36,8 +36,8 @@ val transactionsMap: HashMap<String, MutableSet<TimedTransaction>> = hashMapOf(
                 ),
                 timestamp = System.currentTimeMillis()
             ),
-        )
-    )
+        ),
+    ),
 )
 
 @Service
@@ -61,7 +61,10 @@ class TransactionManagerService() {
                 }.add(input)
             }
         }
-        val tx = Transaction(txId.toString(), transaction.inputs, transaction.outputs)
+        val tx = TimedTransaction(txId.toString(), transaction.inputs, transaction.outputs, System.currentTimeMillis())
+        transactionsMap.getOrPut(address) {
+            sortedSetOf()
+        }.add(tx)
         //TODO Submit tx to ledger using paxos/atomic broadcast or some shit.
 
         return txId.toString()
@@ -69,8 +72,8 @@ class TransactionManagerService() {
 
     fun submitAtomicTxList(transactionList: List<Transaction>, address: String): String {
         // We assume clients are honest and therefore support "zero transactions list" (all tx-id's are "0")
-        // or "Non-zero transaction list (all tx-id's are valid uuid),
         // under the assumption that all input utxo's are valid and unrelated - meaning can be submitted atomically
+        // or "Non-zero transaction list (all tx-id's are valid uuid)
         if (isValidTxList(transactionList)) {
             transactionList.forEach {
                 val address = it.inputs[0].address
@@ -109,7 +112,7 @@ class TransactionManagerService() {
 
         val tx = TimedTransaction(txId.toString(), inputs, outputs, System.currentTimeMillis())
         transactionsMap.getOrPut(address) {
-            mutableSetOf()
+            sortedSetOf()
         }.add(tx)
 
         //TODO Submit tx to ledger using paxos/atomic broadcast or some shit.
@@ -122,11 +125,11 @@ class TransactionManagerService() {
     }
 
     fun getTxHistory(address: String, limit: Int?): List<TimedTransaction> {
-        val sortedList = transactionsMap[address]?.sortedBy { it.timestamp }
-        limit?.let {
-            sortedList?.take(limit)
+        val resultList = transactionsMap[address]
+        resultList?.let {
+            return resultList.take(limit ?: resultList.size)
         }
-        return sortedList ?: mutableListOf()
+        return listOf()
     }
 
     fun getLedgerHistory(limit: Int?): List<Transaction> {
