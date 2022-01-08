@@ -75,11 +75,13 @@ class TransactionManagerService() {
         // under the assumption that all input utxo's are valid and unrelated - meaning can be submitted atomically
         // or "Non-zero transaction list (all tx-id's are valid uuid)
         if (isValidTxList(transactionList)) {
+            // ----------------------------------------------------------------------- Need to acquire a lock here
             transactionList.forEach {
                 val address = it.inputs[0].address
                 // TODO: send gRPC to address corresponding shard
             }
             return "Success submitting Tx list"
+            // ----------------------------------------------------------------------- Need to release a lock here
         }
         return "Failed to submit Tx list"
     }
@@ -116,6 +118,7 @@ class TransactionManagerService() {
         }.add(tx)
 
         //TODO Submit tx to ledger using paxos/atomic broadcast or some shit.
+        // consensusBroadcast.send(Tx)
         return txId.toString()
     }
 
