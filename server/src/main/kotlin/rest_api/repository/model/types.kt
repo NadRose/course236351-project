@@ -1,6 +1,6 @@
 package rest_api.repository.model
 
-data class Transfer (
+data class Transfer(
     val address: String,
     val coins: ULong
 )
@@ -17,4 +17,8 @@ open class Transaction(
 )
 
 class TimedTransaction(txId: String, inputs: MutableList<UTxO>, outputs: MutableList<Transfer>, val timestamp: Long) :
-    Transaction(txId, inputs, outputs)
+    Transaction(txId, inputs, outputs), Comparable<TimedTransaction> {
+    override operator fun compareTo(other: TimedTransaction): Int {
+        return (this.timestamp - other.timestamp).toInt()
+    }
+}
