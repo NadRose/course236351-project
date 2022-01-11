@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "transaction_manager/transaction_manager_messages.proto";
+
+option java_multiple_files = true;
+option java_package = "cs236351.transactionManager";
+
+package cs236351.transactionManager;
+
+service TransactionManagerService {
+  rpc submitTransaction(Transaction) returns (Response) {}
+  rpc makeTransfer(Transfer) returns (Response) {}
+  rpc getUTxOs(AddressRequest) returns (UTxOList) {}
+  rpc getTxHistory(AddressRequest) returns (TimedTransactionList) {}
+}
