@@ -21,4 +21,4 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
 server:
-  port: 8090
+  port: 8190

@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_package = "cs236351.transactionManager";
+
+package cs236351.transactionManager;
+
+enum ResponseEnum {
+  SUCCESS = 0;
+  FAILURE = 1;
+}
+
+message Response {
+  ResponseEnum type = 1;
+  string message = 2;
+}
+
+message AddressRequest {
+  string address = 1;
+  int32 limit = 2;
+}
+
+message Transfer {
+  string srcAddress = 1;
+  string dstAddress = 2;
+  uint64 coins = 3;
+}
+
+message UTxO {
+  string txId = 1;
+  string address = 2;
+}
+
+message UTxOList {
+  repeated UTxO utxoList = 1;
+}
+
+message Transaction {
+  string txId = 1;
+  repeated UTxO inputs = 2;
+  repeated Transfer outputs = 3;
+}
+
+message TimedTransaction {
+  Transaction transaction = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+message TimedTransactionList {
+  repeated TimedTransaction transactionList = 1;
+}
