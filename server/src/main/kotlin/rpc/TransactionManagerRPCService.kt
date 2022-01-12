@@ -4,6 +4,7 @@ import com.google.protobuf.util.Timestamps.fromMillis
 import cs236351.transactionManager.*
 import cs236351.transactionManager.TransactionManagerServiceGrpcKt.TransactionManagerServiceCoroutineImplBase
 import java.util.*
+import rest_api.repository.model.TimedTransactionGRPC as ModelTimedTransaction
 
 class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase() {
     private var UTxOPool: HashMap<String, MutableList<UTxO>> = hashMapOf(
@@ -11,13 +12,14 @@ class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase(
         Pair("2", mutableListOf(uTxO { txId = "2"; address = "2" })),
     )
     private var MissingUTxOPool: HashMap<String, MutableList<UTxO>> = hashMapOf()
-    private var transactionsMap: HashMap<String, SortedSet<rest_api.repository.model.TimedTransaction>> = hashMapOf(
+    private var transactionsMap: HashMap<String, SortedSet<ModelTimedTransaction>> = hashMapOf(
         Pair(
             "1",
             sortedSetOf(
-                rest_api.repository.model.TimedTransaction(
+                ModelTimedTransaction(
                     txId = "1",
                     inputs = mutableListOf(
+
                         uTxO { txId = "0"; address = "0" }
                     ),
                     outputs = mutableListOf(
@@ -50,7 +52,7 @@ class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase(
                 srcAddress = output.srcAddress; dstAddress = output.dstAddress; coins = output.coins
             })
         }
-        val tx = rest_api.repository.model.TimedTransaction(
+        val tx = ModelTimedTransaction(
             inputTxId.toString(),
             inputs,
             outputs,
@@ -104,7 +106,7 @@ class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase(
         }
         this.UTxOPool[request.srcAddress]?.removeAll(utxosToRemove)
 
-        val tx = rest_api.repository.model.TimedTransaction(
+        val tx = ModelTimedTransaction(
             inputTxId.toString(),
             inputs,
             outputs,

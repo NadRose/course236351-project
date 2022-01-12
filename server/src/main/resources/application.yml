@@ -20,5 +20,3 @@ spring:
         # The SQL dialect makes Hibernate generate better SQL for the chosen database
         dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
-server:
-  port: 8190
