@@ -1,77 +1,48 @@
 package rest_api.service
 
 import cs236351.transactionManager.*
+import rest_api.repository.model.Transaction as ModelTransaction
+import rest_api.repository.model.Transfer as ModelTransfer
+import rest_api.repository.model.UTxO as ModelUTxO
+import rest_api.repository.model.TimedTransaction as ModelTimedTransaction
 import io.grpc.ManagedChannelBuilder
+import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Service
-import rpc.TransactionManagerRPCService
-import java.util.concurrent.TimeUnit
+import rest_api.repository.model.fromProto
+import rest_api.repository.model.toProto
 
-//val transactionsMap: HashMap<String, SortedSet<TimedTransaction>> = hashMapOf(
-//    Pair(
-//        "1",
-//        sortedSetOf(
-//            TimedTransaction(
-//                txId = "1",
-//                inputs = mutableListOf(
-//                    UTxO(
-//                        "0",
-//                        "0"
-//                    )
-//                ),
-//                outputs = mutableListOf(
-//                    Transfer(
-//                        "1",
-//                        20u
-//                    ),
-//                    Transfer(
-//                        "2",
-//                        12u
-//                    ),
-//                    Transfer(
-//                        "0",
-//                        ULong.MAX_VALUE - 32u
-//                    )
-//                ),
-//                timestamp = System.currentTimeMillis()
-//            ),
-//        ),
-//    ),
-//)
 
 @Service
-class TransactionManagerService() {
-    private val port = 9190
-    private val channel = ManagedChannelBuilder.forAddress("localhost", port).usePlaintext().build()
-    val stub: TransactionManagerServiceGrpcKt.TransactionManagerServiceCoroutineStub =
-        TransactionManagerServiceGrpcKt.TransactionManagerServiceCoroutineStub(channel)
+class TransactionManagerService {
+    private val servers = listOf(9190, 9191)
 
+    private val channels = servers.associateWith {
+        ManagedChannelBuilder.forAddress("localhost", it).usePlaintext().build()!!
+    }
 
-    suspend fun submitTransaction(transaction: Transaction, address: String): String {
-//        if (!isResponsibleForAddress(address)) {
-//            // TODO: send gRPC to address corresponding shard
-//        }
+    //    private val channel = ManagedChannelBuilder.forAddress("localhost", port).usePlaintext().build()
+    private val stubMap = servers.associateWith {
+        TransactionManagerServiceGrpcKt.TransactionManagerServiceCoroutineStub(channels[it]!!)
+    }
 
-        return stub.submitTransaction(transaction).toString()
-//        val txId = if (transaction.txId == "0") UUID.randomUUID() else transaction.txId
-//        for (input in transaction.inputs) {
-//            if (this.UTxOPool[input.address]?.remove(input) == false) {
-//                this.MissingUTxOPool.getOrPut(input.address) {
-//                    mutableListOf() // TODO what happens if leader crashes in here? how will the followers know he crashed and process the request?
-//                }.add(input)
-//            }
-//        }
-//        val tx = TimedTransaction(txId.toString(), transaction.inputs, transaction.outputs, System.currentTimeMillis())
-//        transactionsMap.getOrPut(address) {
-//            sortedSetOf()
-//        }.add(tx)
-//        //TODO Submit tx to ledger using paxos/atomic broadcast or some shit.
-//
-//        return txId.toString()
+    private fun findOwner(address: String): Int {
+        // TODO: implement after zookeeper integration
+        return 9190
+    }
+
+    fun submitTransaction(transaction: ModelTransaction, address: String): String = runBlocking {
+        val owner = stubMap[findOwner(address)]!!
+        return@runBlocking owner.submitTransaction(toProto(transaction)).toString()
+    }
+
+    fun makeTransfer(transfer: ModelTransfer, address: String): String = runBlocking {
+        val owner = stubMap[findOwner(address)]!!
+        return@runBlocking owner.makeTransfer(toProto(transfer, address)).toString()
     }
 
 //    fun submitAtomicTxList(transactionList: List<Transaction>, address: String): String {
 //        // We assume clients are honest and therefore support "zero transactions list" (all tx-id's are "0")
-//        // under the assumption that all input utxo's are valid and unrelated - meaning can be submitted atomically
+//        // under the assumption that all input utxo are valid and unrelated - meaning can be submitted atomically
 //        // or "Non-zero transaction list (all tx-id's are valid uuid)
 //        if (isValidTxList(transactionList)) {
 //            transactionList.forEach {
@@ -82,55 +53,26 @@ class TransactionManagerService() {
 //        }
 //        return "Failed to submit Tx list"
 //    }
-//
-//    fun makeTransfer(transfer: Transfer, address: String): String {
-////        if (!isResponsibleForAddress(address)) {
-////            // TODO: send gRPC to address corresponding shard
-////        }
-//        val txId = UUID.randomUUID()
-//        val outputs = mutableListOf(transfer)
-//        val inputs: MutableList<UTxO> = mutableListOf()
-//        var curSum: ULong = 0u
-//
-//        if (!this.UTxOPool.containsKey(address)) {
-//            return "Operation failed! Not enough available UTxOs."
-//        }
-//
-//        val utxosToRemove: MutableList<UTxO> = mutableListOf()
-//        for (utxo in this.UTxOPool[address].orEmpty()) {
-//            if (curSum < transfer.coins) {
-//                inputs.add(utxo)
-//                curSum += getAmount(utxo)
-//                utxosToRemove.add(utxo)
-//            } else break
-//        }
-//        if (curSum > transfer.coins) {
-//            this.UTxOPool[address]?.add(UTxO(txId.toString(), address))
-//        }
-//        this.UTxOPool[address]?.removeAll(utxosToRemove)
-//
-//        val tx = TimedTransaction(txId.toString(), inputs, outputs, System.currentTimeMillis())
-//        transactionsMap.getOrPut(address) {
-//            sortedSetOf()
-//        }.add(tx)
-//
-//        //TODO Submit tx to ledger using paxos/atomic broadcast or some shit.
-//        return txId.toString()
-//    }
-//
-//
-//    fun getUTxOs(address: String): List<UTxO> {
-//        return this.UTxOPool[address].orEmpty()
-//    }
-//
-//    fun getTxHistory(address: String, limit: Int?): List<TimedTransaction> {
-//        val resultList = transactionsMap[address]
-//        resultList?.let {
-//            return resultList.take(limit ?: resultList.size)
-//        }
-//        return listOf()
-//    }
-//
+
+    fun getUTxOs(address: String): List<ModelUTxO> = runBlocking {
+        val request = addressRequest {
+            this.address = address
+        }
+        val owner = stubMap[findOwner(address)]!!
+        return@runBlocking owner.getUTxOs(request).utxoListList.map {
+            fromProto(it)
+        }
+    }
+
+    fun getTxHistory(address: String, limit: Int?): List<ModelTimedTransaction> = runBlocking {
+        val request = addressRequest {
+            this.address = address
+            this.limit = limit ?: Int.MAX_VALUE
+        }
+        val owner = stubMap[findOwner(address)]!!
+        return@runBlocking owner.getTxHistory(request).transactionListList.map { fromProto(it) }
+    }
+
 //    fun getLedgerHistory(limit: Int?): List<Transaction> {
 //        // TODO: Read ledger from consensus mechanism or some shit.
 //        return listOf()

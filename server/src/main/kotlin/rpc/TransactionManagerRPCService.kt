@@ -4,20 +4,22 @@ import com.google.protobuf.util.Timestamps.fromMillis
 import cs236351.transactionManager.*
 import cs236351.transactionManager.TransactionManagerServiceGrpcKt.TransactionManagerServiceCoroutineImplBase
 import java.util.*
+import rest_api.repository.model.TimedTransactionGRPC as ModelTimedTransaction
 
 class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase() {
-    private var UTxOPool: HashMap<String, MutableList<UTxO>> = hashMapOf(
+    private var utxoPool: HashMap<String, MutableList<UTxO>> = hashMapOf(
         Pair("1", mutableListOf(uTxO { txId = "1"; address = "1" })),
         Pair("2", mutableListOf(uTxO { txId = "2"; address = "2" })),
     )
-    private var MissingUTxOPool: HashMap<String, MutableList<UTxO>> = hashMapOf()
-    private var transactionsMap: HashMap<String, SortedSet<rest_api.repository.model.TimedTransaction>> = hashMapOf(
+    private var missingUtxoPool: HashMap<String, MutableList<UTxO>> = hashMapOf()
+    private var transactionsMap: HashMap<String, SortedSet<ModelTimedTransaction>> = hashMapOf(
         Pair(
             "1",
             sortedSetOf(
-                rest_api.repository.model.TimedTransaction(
+                ModelTimedTransaction(
                     txId = "1",
                     inputs = mutableListOf(
+
                         uTxO { txId = "0"; address = "0" }
                     ),
                     outputs = mutableListOf(
@@ -38,8 +40,8 @@ class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase(
         val inputs: MutableList<UTxO> = mutableListOf()
         val outputs: MutableList<Transfer> = mutableListOf()
         for (input in request.inputsList) {
-            if (this.UTxOPool[input.address]?.remove(input) == false) {
-                this.MissingUTxOPool.getOrPut(input.address) {
+            if (this.utxoPool[input.address]?.remove(input) == false) {
+                this.missingUtxoPool.getOrPut(input.address) {
                     mutableListOf() // TODO what happens if leader crashes in here? how will the followers know he crashed and process the request?
                 }.add(input)
             }
@@ -50,7 +52,7 @@ class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase(
                 srcAddress = output.srcAddress; dstAddress = output.dstAddress; coins = output.coins
             })
         }
-        val tx = rest_api.repository.model.TimedTransaction(
+        val tx = ModelTimedTransaction(
             inputTxId.toString(),
             inputs,
             outputs,
@@ -61,8 +63,8 @@ class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase(
         }.add(tx)
 
         // debugging like assholes
-        println(UTxOPool.toString())
-        println(MissingUTxOPool.toString())
+        println(utxoPool.toString())
+        println(missingUtxoPool.toString())
         println(transactionsMap.forEach { entry ->
             println("address: " + entry.key)
             entry.value.forEach {
@@ -84,27 +86,27 @@ class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase(
         val inputs: MutableList<UTxO> = mutableListOf()
         var curSum: Long = 0
 
-        if (!this.UTxOPool.containsKey(request.srcAddress)) {
+        if (!this.utxoPool.containsKey(request.srcAddress)) {
             return response { type = ResponseEnum.FAILURE; message = "Operation failed! Not enough available UTxOs." }
         }
 
-        val utxosToRemove: MutableList<UTxO> = mutableListOf()
-        for (utxo in this.UTxOPool[request.srcAddress].orEmpty()) {
+        val utxoToRemove: MutableList<UTxO> = mutableListOf()
+        for (utxo in this.utxoPool[request.srcAddress].orEmpty()) {
             if (curSum < request.coins) {
                 inputs.add(utxo)
                 curSum += getAmount(utxo)
-                utxosToRemove.add(utxo)
+                utxoToRemove.add(utxo)
             } else break
         }
         if (curSum > request.coins) {
-            this.UTxOPool[request.srcAddress]?.add(uTxO {
+            this.utxoPool[request.srcAddress]?.add(uTxO {
                 txId = inputTxId.toString()
                 address = request.srcAddress
             })
         }
-        this.UTxOPool[request.srcAddress]?.removeAll(utxosToRemove)
+        this.utxoPool[request.srcAddress]?.removeAll(utxoToRemove)
 
-        val tx = rest_api.repository.model.TimedTransaction(
+        val tx = ModelTimedTransaction(
             inputTxId.toString(),
             inputs,
             outputs,
@@ -121,7 +123,7 @@ class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase(
 
     override suspend fun getUTxOs(request: AddressRequest): UTxOList {
         return uTxOList {
-            utxoList.addAll(UTxOPool[request.address].orEmpty())
+            utxoList.addAll(utxoPool[request.address].orEmpty())
         }
     }
 
@@ -131,11 +133,11 @@ class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase(
             slicedList?.forEach { //TODO check if limit or sliced list is null what happens?
                 transactionList.add(timedTransaction {
                     transaction = transaction {
-                        txId = it.txId;
+                        txId = it.txId
                         inputs.addAll(it.inputs)
                         outputs.addAll(it.outputs)
                     }
-                    timestamp = fromMillis(it.timestamp);
+                    timestamp = fromMillis(it.timestamp)
                 })
             }
         }

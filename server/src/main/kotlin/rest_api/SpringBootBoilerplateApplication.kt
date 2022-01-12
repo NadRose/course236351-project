@@ -2,21 +2,24 @@ package rest_api
 
 import io.grpc.ServerBuilder
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-import multipaxos.AcceptorService
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import rpc.TransactionManagerRPCService
+
 
 @SpringBootApplication
 class SpringBootBoilerplateApplication
 
 suspend fun main(args: Array<String>) {
 
+	// set http server port
+	System.setProperty("server.port", args[0])
+
 	val transactionManagerRPCService = TransactionManagerRPCService()
 
-	val server = ServerBuilder.forPort(9190)
+	//set gRPC server port
+	val server = ServerBuilder.forPort(args[1].toInt())
 		.apply {
 			addService(transactionManagerRPCService)
 		}
