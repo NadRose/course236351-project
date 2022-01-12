@@ -41,7 +41,7 @@ class TransactionManagerService {
 
 //    fun submitAtomicTxList(transactionList: List<Transaction>, address: String): String {
 //        // We assume clients are honest and therefore support "zero transactions list" (all tx-id's are "0")
-//        // under the assumption that all input utxo's are valid and unrelated - meaning can be submitted atomically
+//        // under the assumption that all input utxo are valid and unrelated - meaning can be submitted atomically
 //        // or "Non-zero transaction list (all tx-id's are valid uuid)
 //        if (isValidTxList(transactionList)) {
 //            transactionList.forEach {
