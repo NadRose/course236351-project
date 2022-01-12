@@ -26,6 +26,7 @@ class TransactionManagerService {
     }
 
     private fun findOwner(address: String): Int {
+        // TODO: implement after zookeeper integration
         return 9190
     }
 
