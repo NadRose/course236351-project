@@ -1,18 +1,36 @@
 package multipaxos
 
 import com.google.protobuf.ByteString
+import rest_api.repository.model.Transaction
 import com.google.protobuf.kotlin.toByteStringUtf8
 import io.grpc.ManagedChannelBuilder
 import io.grpc.ServerBuilder
 import kotlinx.coroutines.*
 
-val biSerializer = object : ByteStringBiSerializer<String> {
-    override fun serialize(obj: String) = obj.toByteStringUtf8()
-    override fun deserialize(serialization: ByteString) = serialization
-        .toStringUtf8()!!
+val TransactionBiSerializer = object : ByteStringBiSerializer<Transaction> {
+    override fun serialize(obj: Transaction): ByteString {
+        return ByteString.copyFrom(obj.toString().toByteArray())
+    }
+    override fun deserialize(serialization: ByteString): Transaction {
+        return Transaction("1", inputs = mutableListOf(), outputs = mutableListOf())
+    }
 }
+//
+//class Consensus(learner: LearnerService, serializer: TransactionsSerializer) :
+//    AtomicBroadcast<Transaction>(learner, serializer) {
+//    private var seq = 0
+//
+//    override suspend fun _send(byteString: ByteString) {
+//        this.learner.observers[0].invoke(seq++, byteString)
+//    }
+//
+//    override fun _deliver(byteString: ByteString): List<Transaction> {
+//        return listOf(biSerializer.deserialize(byteString))
+//    }
+//
+//}
 
-suspend fun main(args: Array<String>) = coroutineScope {
+suspend fun gRPCAndConsensusRunner(args: Array<String>) = coroutineScope {
 
     // Displays all debug messages from gRPC
     org.apache.log4j.BasicConfigurator.configure()
@@ -37,7 +55,7 @@ suspend fun main(args: Array<String>) = coroutineScope {
         .build()
 
     // Use the atomic broadcast adapter to use the learner service as an atomic broadcast service
-    val atomicBroadcast = object : AtomicBroadcast<String>(learnerService, biSerializer) {
+    val atomicBroadcast = object : AtomicBroadcast<Transaction>(learnerService, TransactionBiSerializer) {
         // These are dummy implementations
         override suspend fun _send(byteString: ByteString) = throw NotImplementedError()
         override fun _deliver(byteString: ByteString) = listOf(biSerializer(byteString))
@@ -77,9 +95,9 @@ suspend fun main(args: Array<String>) = coroutineScope {
     // Starts The proposer
     proposer.start()
 
-    startRecievingMessages(atomicBroadcast)
+    startReceivingMessages(atomicBroadcast)
 
-    // "Key press" barrier so only one propser sends messages
+    // "Key press" barrier so only one proposer sends messages
     withContext(Dispatchers.IO) { // Operations that block the current thread should be in a IO context
         System.`in`.read()
     }
@@ -104,10 +122,11 @@ private fun CoroutineScope.startGeneratingMessages(
     }
 }
 
-private fun CoroutineScope.startRecievingMessages(atomicBroadcast: AtomicBroadcast<String>) {
+private fun CoroutineScope.startReceivingMessages(atomicBroadcast: AtomicBroadcast<Transaction>) {
     launch {
         for ((`seq#`, msg) in atomicBroadcast.stream) {
             println("Message #$`seq#`: $msg  received!")
+            // insert transaction to ledger
         }
     }
 }
