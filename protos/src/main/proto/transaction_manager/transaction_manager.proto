@@ -8,6 +8,7 @@ option java_package = "cs236351.transactionManager";
 package cs236351.transactionManager;
 
 service TransactionManagerService {
+  rpc findOwner(AddressRequest) returns (AddressRequest) {}
   rpc submitTransaction(Transaction) returns (Response) {}
   rpc makeTransfer(Transfer) returns (Response) {}
   rpc getUTxOs(AddressRequest) returns (UTxOList) {}

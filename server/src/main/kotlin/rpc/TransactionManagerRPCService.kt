@@ -3,10 +3,15 @@ package rpc
 import com.google.protobuf.util.Timestamps.fromMillis
 import cs236351.transactionManager.*
 import cs236351.transactionManager.TransactionManagerServiceGrpcKt.TransactionManagerServiceCoroutineImplBase
+import zookeeper.kotlin.examples.Membership
+import zookeeper.kotlin.zookeeper.ZooKeeperKt
 import java.util.*
 import rest_api.repository.model.TimedTransactionGRPC as ModelTimedTransaction
 
-class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase() {
+class TransactionManagerRPCService(
+    private val zkClient: ZooKeeperKt,
+    private val membership: Membership
+) : TransactionManagerServiceCoroutineImplBase() {
     private var utxoPool: HashMap<String, MutableList<UTxO>> = hashMapOf(
         Pair("1", mutableListOf(uTxO { txId = "1"; address = "1" })),
         Pair("2", mutableListOf(uTxO { txId = "2"; address = "2" })),
@@ -32,6 +37,16 @@ class TransactionManagerRPCService : TransactionManagerServiceCoroutineImplBase(
             ),
         ),
     )
+
+    override suspend fun findOwner(request: AddressRequest): AddressRequest {
+        // TODO: implement after zookeeper integration
+        val shardsList = zkClient.getChildren("/membership") {}.first
+        val shardNum = request.address.toBigInteger().mod(shardsList.size.toBigInteger()).toInt()
+        val shard = shardsList[shardNum]
+        return addressRequest {
+            limit = zkClient.getChildren("/membership/$shard") {}.first[0].toInt()
+        }
+    }
 
     override suspend fun submitTransaction(request: Transaction): Response {
         println(request.toString())

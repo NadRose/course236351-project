@@ -23,36 +23,24 @@ services:
     environment:
       - ZOO_SERVER_ID=1
       - ALLOW_ANONYMOUS_LOGIN=yes
-      - ZOO_SERVERS=zoo1.zk.local:2888:3888,zoo2.zk.local:2888:3888,zoo3.zk.local:2888:3888
+      - ZOO_SERVERS=zoo1.zk.local:2888:3888
+      - ZOO_LOG_LEVEL=DEBUG
+  #      - ,zoo2.zk.local:2888:3888,zoo3.zk.local:2888:3888
   
-  zookeeper2:
-    image: docker.io/bitnami/zookeeper:3.7
-    hostname: zoo2.zk.local
-    ports:
-      - 2182:2181
-    volumes:
-      - zookeeper2_data:/bitnami
-    networks:
-      - zookeeper
-    environment:
-      - ZOO_SERVER_ID=2
-      - ALLOW_ANONYMOUS_LOGIN=yes
-      - ZOO_SERVERS=zoo1.zk.local:2888:3888,zoo2.zk.local:2888:3888,zoo3.zk.local:2888:3888
-  
-  zookeeper3:
-    image: docker.io/bitnami/zookeeper:3.7
-    hostname: zoo3.zk.local
-    ports:
-      - 2183:2181
-    volumes:
-      - zookeeper3_data:/bitnami
-    networks:
-      - zookeeper
-    environment:
-      - ZOO_SERVER_ID=3
-      - ALLOW_ANONYMOUS_LOGIN=yes
-      - ZOO_SERVERS=zoo1.zk.local:2888:3888,zoo2.zk.local:2888:3888,zoo3.zk.local:2888:3888
-  
+#  zookeeper2:
+#    image: docker.io/bitnami/zookeeper:3.7
+#    hostname: zoo2.zk.local
+#    ports:
+#      - 2182:2181
+#    volumes:
+#      - zookeeper2_data:/bitnami
+#    networks:
+#      - zookeeper
+#    environment:
+#      - ZOO_SERVER_ID=2
+#      - ALLOW_ANONYMOUS_LOGIN=yes
+#      - ZOO_SERVERS=zoo1.zk.local:2888:3888,zoo2.zk.local:2888:3888,zoo3.zk.local:2888:3888
+#
   zoonavigator:
     image: elkozmon/zoonavigator:1.1.1
     hostname: navigator.zk.local
@@ -65,11 +53,11 @@ services:
       CONNECTION_ZKLOCAL1_NAME: ZooKeeper Server 1
       CONNECTION_ZKLOCAL1_CONN: zoo1.zk.local
 
-      CONNECTION_ZKLOCAL2_NAME: ZooKeeper Server 2
-      CONNECTION_ZKLOCAL2_CONN: zoo2.zk.local
-
-      CONNECTION_ZKLOCAL3_NAME: ZooKeeper Server 3
-      CONNECTION_ZKLOCAL3_CONN: zoo3.zk.local
+#      CONNECTION_ZKLOCAL2_NAME: ZooKeeper Server 2
+#      CONNECTION_ZKLOCAL2_CONN: zoo2.zk.local
+#
+#      CONNECTION_ZKLOCAL3_NAME: ZooKeeper Server 3
+#      CONNECTION_ZKLOCAL3_CONN: zoo3.zk.local
 
       AUTO_CONNECT_CONNECTION_ID: ZKLOCAL1
 

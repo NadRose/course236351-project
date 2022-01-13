@@ -15,6 +15,7 @@ import rest_api.repository.model.toProto
 @Service
 class TransactionManagerService {
     private val servers = listOf(9190, 9191)
+    private val rpcPort = System.getenv("RPC_PORT").toInt()
 
     private val channels = servers.associateWith {
         ManagedChannelBuilder.forAddress("localhost", it).usePlaintext().build()!!
@@ -25,9 +26,9 @@ class TransactionManagerService {
         TransactionManagerServiceGrpcKt.TransactionManagerServiceCoroutineStub(channels[it]!!)
     }
 
-    private fun findOwner(address: String): Int {
-        // TODO: implement after zookeeper integration
-        return 9190
+    private fun findOwner(address: String): Int = runBlocking {
+        val owner = stubMap[rpcPort]!!
+        return@runBlocking owner.findOwner(addressRequest { this.address = address }).limit
     }
 
     fun submitTransaction(transaction: ModelTransaction, address: String): String = runBlocking {
