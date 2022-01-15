@@ -1,3 +1,4 @@
+
 syntax = "proto3";
 
 import "transaction_manager/transaction_manager_messages.proto";
@@ -9,8 +10,12 @@ package cs236351.transactionManager;
 
 service TransactionManagerService {
   rpc findOwner(AddressRequest) returns (AddressRequest) {}
+  rpc consensusAddProposal(ConsensusMessage) returns (Response) {}
+  //  rpc consensusGetLedger(AddressRequest) returns (AddressRequest) {}
   rpc submitTransaction(Transaction) returns (Response) {}
   rpc makeTransfer(Transfer) returns (Response) {}
+  rpc submitAtomicTransaction(TransactionList) returns (Response) {}
   rpc getUTxOs(AddressRequest) returns (UTxOList) {}
   rpc getTxHistory(AddressRequest) returns (TimedTransactionList) {}
+  //getLedger
 }

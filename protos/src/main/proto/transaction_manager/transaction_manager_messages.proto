@@ -26,6 +26,7 @@ message Transfer {
   string srcAddress = 1;
   string dstAddress = 2;
   uint64 coins = 3;
+  string txId = 4;
 }
 
 message UTxO {
@@ -48,6 +49,14 @@ message TimedTransaction {
   google.protobuf.Timestamp timestamp = 2;
 }
 
+message TransactionList {
+  repeated Transaction transactions = 1;
+}
+
 message TimedTransactionList {
   repeated TimedTransaction transactionList = 1;
+}
+
+message ConsensusMessage {
+  bytes message = 1;
 }

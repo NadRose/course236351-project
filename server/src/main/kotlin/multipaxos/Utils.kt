@@ -40,7 +40,7 @@ internal val paxosThread = newSingleThreadContext(
 
 interface OmegaFailureDetector<ID> {
     // This property should return the value immediately
-    val leader: ID
+    var leader: ID
 
     // Notifies each time when the leader has change
     // by invoking the function argument

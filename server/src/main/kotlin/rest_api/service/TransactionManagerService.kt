@@ -5,73 +5,115 @@ import rest_api.repository.model.Transaction as ModelTransaction
 import rest_api.repository.model.Transfer as ModelTransfer
 import rest_api.repository.model.UTxO as ModelUTxO
 import rest_api.repository.model.TimedTransaction as ModelTimedTransaction
-import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.runBlocking
+import main.retry
+import main.rpcAddress
+import main.stubMap
+import main.timeout
 import org.springframework.stereotype.Service
 import rest_api.repository.model.fromProto
 import rest_api.repository.model.toProto
-
+import java.util.*
+import java.util.concurrent.TimeUnit
 
 @Service
 class TransactionManagerService {
-    private val servers = listOf(9190, 9191)
-    private val rpcPort = System.getenv("RPC_PORT").toInt()
 
-    private val channels = servers.associateWith {
-        ManagedChannelBuilder.forAddress("localhost", it).usePlaintext().build()!!
+    private fun findOwner(address: String): String = runBlocking {
+        val owner = stubMap[rpcAddress]!!
+        return@runBlocking owner.findOwner(addressRequest { this.address = address }).address
     }
 
-    //    private val channel = ManagedChannelBuilder.forAddress("localhost", port).usePlaintext().build()
-    private val stubMap = servers.associateWith {
-        TransactionManagerServiceGrpcKt.TransactionManagerServiceCoroutineStub(channels[it]!!)
-    }
-
-    private fun findOwner(address: String): Int = runBlocking {
-        val owner = stubMap[rpcPort]!!
-        return@runBlocking owner.findOwner(addressRequest { this.address = address }).limit
-    }
-
-    fun submitTransaction(transaction: ModelTransaction, address: String): String = runBlocking {
-        val owner = stubMap[findOwner(address)]!!
-        return@runBlocking owner.submitTransaction(toProto(transaction)).toString()
-    }
-
-    fun makeTransfer(transfer: ModelTransfer, address: String): String = runBlocking {
-        val owner = stubMap[findOwner(address)]!!
-        return@runBlocking owner.makeTransfer(toProto(transfer, address)).toString()
-    }
-
-//    fun submitAtomicTxList(transactionList: List<Transaction>, address: String): String {
-//        // We assume clients are honest and therefore support "zero transactions list" (all tx-id's are "0")
-//        // under the assumption that all input utxo are valid and unrelated - meaning can be submitted atomically
-//        // or "Non-zero transaction list (all tx-id's are valid uuid)
-//        if (isValidTxList(transactionList)) {
-//            transactionList.forEach {
-//                val address = it.inputs[0].address
-//                // TODO: send gRPC to address corresponding shard
-//            }
-//            return "Success submitting Tx list"
+//    private fun runEndPointWith(the_main: fun) = runBlocking {
+//
+//        withZooKeeper(zkConnectionString) {
+//            the_main(args, it)
 //        }
-//        return "Failed to submit Tx list"
 //    }
 
-    fun getUTxOs(address: String): List<ModelUTxO> = runBlocking {
-        val request = addressRequest {
-            this.address = address
-        }
-        val owner = stubMap[findOwner(address)]!!
-        return@runBlocking owner.getUTxOs(request).utxoListList.map {
-            fromProto(it)
+    fun submitTransaction(transaction: ModelTransaction, address: String): String {
+        val inputTxId = if (transaction.txId == "0") UUID.randomUUID().toString() else transaction.txId
+        val transactionReq = ModelTransaction(inputTxId, transaction.inputs, transaction.outputs)
+        try {
+            for (i in 1..retry) {
+                runBlocking {
+                    val owner = stubMap[findOwner(address)]!!
+                    return@runBlocking owner.withDeadlineAfter(timeout.toLong(), TimeUnit.MILLISECONDS)
+                        .submitTransaction(toProto(transactionReq)).toString()
+                }
+            }
+            return "Operation failed. Please try again later."
+        } catch (e: Error) {
+            return "Operation failed. Please try again later."
         }
     }
 
-    fun getTxHistory(address: String, limit: Int?): List<ModelTimedTransaction> = runBlocking {
-        val request = addressRequest {
-            this.address = address
-            this.limit = limit ?: Int.MAX_VALUE
+    fun makeTransfer(transfer: ModelTransfer, address: String): String {
+        val inputTxId = UUID.randomUUID().toString()
+        try {
+            for (i in 1..retry) {
+                runBlocking {
+                    val owner = stubMap[findOwner(address)]!!
+                    return@runBlocking owner.withDeadlineAfter(timeout.toLong(), TimeUnit.MILLISECONDS)
+                        .makeTransfer(toProto(transfer, address, inputTxId)).toString()
+                }
+            }
+            return "Operation failed. Please try again later."
+        } catch (e: Error) {
+            return "Operation failed. Please try again later."
         }
-        val owner = stubMap[findOwner(address)]!!
-        return@runBlocking owner.getTxHistory(request).transactionListList.map { fromProto(it) }
+    }
+
+    fun submitAtomicTxList(transactionList: List<ModelTransaction>): String {
+        try {
+            for (i in 1..retry) {
+                runBlocking {
+                    val owner = stubMap[rpcAddress]!!
+                    return@runBlocking owner.withDeadlineAfter(timeout.toLong(), TimeUnit.MILLISECONDS)
+                        .submitAtomicTransaction(toProto(transactionList)).toString()
+                }
+            }
+            return "Operation failed. Please try again later."
+        } catch (e: Error) {
+            return "Operation failed. Please try again later."
+        }
+    }
+
+    fun getUTxOs(address: String): List<ModelUTxO> {
+        try {
+            for (i in 1..retry) {
+                runBlocking {
+                    val request = addressRequest {
+                        this.address = address
+                    }
+                    val owner = stubMap[findOwner(address)]!!
+                    return@runBlocking owner.withDeadlineAfter(timeout.toLong(), TimeUnit.MILLISECONDS)
+                        .getUTxOs(request).utxoListList.map { fromProto(it) }
+                }
+            }
+            return listOf()
+        } catch (e: Error) {
+            return listOf()
+        }
+    }
+
+    fun getTxHistory(address: String, limit: Int?): List<ModelTimedTransaction> {
+        try {
+            for (i in 1..retry) {
+                runBlocking {
+                    val request = addressRequest {
+                        this.address = address
+                        this.limit = limit ?: Int.MAX_VALUE
+                    }
+                    val owner = stubMap[findOwner(address)]!!
+                    return@runBlocking owner.withDeadlineAfter(timeout.toLong(), TimeUnit.MILLISECONDS)
+                        .getTxHistory(request).transactionListList.map { fromProto(it) }
+                }
+            }
+            return listOf()
+        } catch (e: Error) {
+            return listOf()
+        }
     }
 
 //    fun getLedgerHistory(limit: Int?): List<Transaction> {

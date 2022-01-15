@@ -11,8 +11,8 @@ class TransactionManagerController(private val transactionManagerService: Transa
     fun submitTransaction(@RequestBody body: Transaction, @PathVariable address: String): String =
         transactionManagerService.submitTransaction(body, address)
 
-//    @PostMapping("/submit/atomic/{address}")
-//    fun submitAtomicTxList(@RequestBody body: List<Transaction>, @PathVariable address: String): String = transactionManagerService.submitAtomicTxList(body, address)
+    @PostMapping("/submit/atomic/{address}")
+    fun submitAtomicTxList(@RequestBody body: List<Transaction>, @PathVariable address: String): String = transactionManagerService.submitAtomicTxList(body)
 
     @PostMapping("/transfer/{address}")
     fun makeTransfer(@RequestBody body: Transfer, @PathVariable address: String): String = transactionManagerService.makeTransfer(body, address)
