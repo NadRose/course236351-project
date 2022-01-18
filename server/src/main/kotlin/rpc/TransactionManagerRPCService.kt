@@ -2,19 +2,21 @@ package rpc
 
 import cs236351.transactionManager.*
 import cs236351.transactionManager.TransactionManagerServiceGrpcKt.TransactionManagerServiceCoroutineImplBase
+import kotlinx.coroutines.channels.Channel
 import main.shards
 import multipaxos.AtomicBroadcast
 import multipaxos.Proposer
+import rest_api.repository.model.fromProto
 import rest_api.repository.model.toProto
 import zookeeper.kotlin.zookeeper.ZooKeeperKt
 import java.util.*
 import rest_api.repository.model.TimedTransactionGRPC as ModelTimedTransaction
 
-var utxoPool: HashMap<String, MutableList<UTxO>> = hashMapOf(
+val utxoPool: HashMap<String, MutableList<UTxO>> = hashMapOf(
     Pair("0", mutableListOf(uTxO { txId = "0"; address = "0" })),
 )
-var missingUtxoPool: HashMap<String, MutableList<UTxO>> = hashMapOf()
-var transactionsMap: HashMap<String, SortedSet<ModelTimedTransaction>> = hashMapOf(
+val missingUtxoPool: HashMap<String, MutableList<UTxO>> = hashMapOf()
+val transactionsMap: HashMap<String, MutableSet<ModelTimedTransaction>> = hashMapOf(
     Pair(
         "0",
         sortedSetOf(
@@ -41,6 +43,10 @@ class TransactionManagerRPCService(
     private val atomicBroadcast: AtomicBroadcast<List<ModelTimedTransaction>>
 ) : TransactionManagerServiceCoroutineImplBase() {
 
+    private val ledger = sortedSetOf<ModelTimedTransaction>()
+    private var senders = mutableSetOf<String>()
+    private val ledgerChan = Channel<String>(1)
+
     override suspend fun findOwner(request: AddressRequest): AddressRequest {
         val shard = findOwnerShard(request.address)
         return addressRequest {
@@ -53,6 +59,18 @@ class TransactionManagerRPCService(
         return response {
             type = ResponseEnum.SUCCESS
         }
+    }
+
+    override suspend fun consensusPostLedger(request: TimedTransactionList): Response {
+        val lst = fromProto(request)
+        val senderName = lst[0].txId
+        if (senderName in senders)
+            return response {}
+        val smallLedger = lst.toMutableList()
+        smallLedger.removeAt(0)
+        ledger.addAll(smallLedger)
+        ledgerChan.send(senderName)
+        return response {}
     }
 
     override suspend fun submitTransaction(request: Transaction): Response {
@@ -160,6 +178,24 @@ class TransactionManagerRPCService(
 
     override suspend fun getTxHistory(request: AddressRequest): TimedTransactionList {
         val slicedList = transactionsMap.getOrElse(request.address) { sortedSetOf() }.take(request.limit)
+        return toProto(slicedList)
+    }
+
+    override suspend fun getLedger(request: AddressRequest): TimedTransactionList {
+        val tx = ModelTimedTransaction(
+            request.address,
+            mutableListOf(),
+            mutableListOf(),
+            0,
+        )
+        atomicBroadcast.send(listOf(tx))
+        senders = mutableSetOf()
+
+        for (shard in ledgerChan) {
+            senders.add(shard)
+            if (senders.size == shards.size) break
+        }
+        val slicedList = ledger.take(request.limit)
         return toProto(slicedList)
     }
 

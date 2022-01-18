@@ -7,7 +7,7 @@ import rest_api.repository.model.UTxO as ModelUTxO
 import rest_api.repository.model.TimedTransaction as ModelTimedTransaction
 import kotlinx.coroutines.runBlocking
 import main.retry
-import main.rpcAddress
+import main.serverAddress
 import main.stubMap
 import main.timeout
 import org.springframework.stereotype.Service
@@ -20,16 +20,9 @@ import java.util.concurrent.TimeUnit
 class TransactionManagerService {
 
     private fun findOwner(address: String): String = runBlocking {
-        val owner = stubMap[rpcAddress]!!
+        val owner = stubMap[serverAddress]!!
         return@runBlocking owner.findOwner(addressRequest { this.address = address }).address
     }
-
-//    private fun runEndPointWith(the_main: fun) = runBlocking {
-//
-//        withZooKeeper(zkConnectionString) {
-//            the_main(args, it)
-//        }
-//    }
 
     fun submitTransaction(transaction: ModelTransaction, address: String): String {
         val inputTxId = if (transaction.txId == "0") UUID.randomUUID().toString() else transaction.txId
@@ -68,7 +61,7 @@ class TransactionManagerService {
         try {
             for (i in 1..retry) {
                 runBlocking {
-                    val owner = stubMap[rpcAddress]!!
+                    val owner = stubMap[serverAddress]!!
                     return@runBlocking owner.withDeadlineAfter(timeout.toLong(), TimeUnit.MILLISECONDS)
                         .submitAtomicTransaction(toProto(transactionList)).toString()
                 }
@@ -116,9 +109,22 @@ class TransactionManagerService {
         }
     }
 
-//    fun getLedgerHistory(limit: Int?): List<Transaction> {
-//        // TODO: Read ledger from consensus mechanism or some shit.
-//        return listOf()
-//    }
+    fun getLedgerHistory(limit: Int?): List<ModelTimedTransaction> {
+        try {
+            for (i in 1..retry) {
+                runBlocking {
+                    val request = addressRequest {
+                        this.limit = limit ?: Int.MAX_VALUE
+                    }
+                    val owner = stubMap[findOwner(serverAddress)]!!
+                    return@runBlocking owner.withDeadlineAfter(timeout.toLong(), TimeUnit.MILLISECONDS)
+                        .getLedger(request).transactionListList.map { fromProto(it) }
+                }
+            }
+            return listOf()
+        } catch (e: Error) {
+            return listOf()
+        }
+    }
 }
 

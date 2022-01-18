@@ -32,7 +32,7 @@ suspend fun initPath() = coroutineScope {
 
     // -------------------------------------------- zookeeper setup --------------------------------------------
     BasicConfigurator.configure()
-    val zkSockets = Pair("127.0.0.1", 2181)
+    val zkSockets = Pair("zoo1.zk.local", 2181)
     val zkConnectionString = makeConnectionString(listOf(zkSockets))
 
     println("--- Connecting to ZooKeeper @ $zkConnectionString")
@@ -54,12 +54,12 @@ suspend fun initPath() = coroutineScope {
         this.ignore(KeeperException.Code.NODEEXISTS)
     }
 
-    zkClient.create("/$membershipName/$rpcAddress") {
+    zkClient.create("/$membershipName/$serverAddress") {
         flags = Ephemeral
     }
 
     // Take the ID as the port number
-    val id = rpcAddress.toInt()
+    val id = serverAddress.toInt()
 
     // Init services
     val learnerService = LearnerService(this)
@@ -150,7 +150,11 @@ suspend fun initPath() = coroutineScope {
 private fun CoroutineScope.startReceivingPaxosMessages(atomicBroadcast: AtomicBroadcast<List<TimedTransactionGRPC>>) {
     launch {
         for ((`seq#`, msg) in atomicBroadcast.stream) {
-            println("Message #$`seq#`  received at server $rpcAddress")
+            println("Message #$`seq#`  received at server $serverAddress")
+            if (msg.isNotEmpty() && msg[0].timestamp == 0.toLong()) {
+                sendOwnLedger(msg[0].txId)
+                continue
+            }
             msg.forEach { timedTransaction ->
                 val fromAddress = timedTransaction.inputs[0].address
                 if (findOwnerShard(fromAddress) == membershipName) {
@@ -179,5 +183,24 @@ private fun CoroutineScope.startReceivingPaxosMessages(atomicBroadcast: AtomicBr
                 }
             }
         }
+    }
+}
+
+fun sendOwnLedger(address: String) {
+    val ownLedger: MutableList<TimedTransactionGRPC> = mutableListOf(
+        TimedTransactionGRPC(
+            membershipName,
+            mutableListOf(),
+            mutableListOf(),
+            timestamp = 0,
+        )
+    )
+    transactionsMap.values.forEach {
+        ownLedger.addAll(it)
+    }
+
+    val owner = stubMap[address]!!
+    runBlocking {
+        owner.consensusPostLedger(toProto(ownLedger))
     }
 }

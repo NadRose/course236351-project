@@ -23,7 +23,7 @@ class TransactionManagerController(private val transactionManagerService: Transa
     @GetMapping("/tx/history/{address}")
     fun getTxHistory(@PathVariable address: String, @RequestParam limit: Int?): List<TimedTransaction> = transactionManagerService.getTxHistory(address, limit)
 
-//    @GetMapping("/history/")
-//    fun getLedgerHistory( @RequestParam limit: Int?): List<Transaction> = transactionManagerService.getLedgerHistory(limit)
+    @GetMapping("/history/")
+    fun getLedgerHistory( @RequestParam limit: Int?): List<TimedTransaction> = transactionManagerService.getLedgerHistory(limit)
 
 }

@@ -156,6 +156,21 @@ fun fromProto(timedTransaction: ProtoTimedTransaction): TimedTransaction {
     )
 }
 
+fun fromProtoToGRPC(timedTransaction: ProtoTimedTransaction): TimedTransactionGRPC {
+    return TimedTransactionGRPC(
+        txId = timedTransaction.transaction.txId,
+        inputs = timedTransaction.transaction.inputsList,
+        outputs = timedTransaction.transaction.outputsList,
+        timestamp = toMillis(timedTransaction.timestamp)
+    )
+}
+
+fun fromProto(transactions: ProtoTimedTransactionList): List<TimedTransactionGRPC> {
+    return transactions.transactionListList.map {
+        fromProtoToGRPC(it)
+    }
+}
+
 fun toKotlinPureTimedTransaction(tx: TimedTransactionGRPC): TimedTransaction {
     return TimedTransaction(
         txId = tx.txId,
