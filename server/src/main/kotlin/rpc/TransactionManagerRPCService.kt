@@ -107,7 +107,7 @@ class TransactionManagerRPCService(
     override suspend fun makeTransfer(request: Transfer): Response {
         val inputTxId = request.txId
         if (isTxExist(inputTxId, request.srcAddress))
-            return response { type = ResponseEnum.SUCCESS; message = inputTxId }
+            return response { type = ResponseEnum.SUCCESS; message = "inputTxId $inputTxId exists" }
         val outputs = mutableListOf(request)
         val inputs: MutableList<UTxO> = mutableListOf()
         var curSum: Long = 0
