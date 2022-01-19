@@ -153,10 +153,6 @@ private fun CoroutineScope.startReceivingPaxosMessages(atomicBroadcast: AtomicBr
     launch {
         for ((`seq#`, msg) in atomicBroadcast.stream) {
             println("Message #$`seq#`  received at server $serverAddress")
-            if (msg.isNotEmpty() && msg[0].timestamp == 0.toLong()) {
-                sendOwnLedger(msg[0].txId)
-                continue
-            }
             msg.forEach { timedTransaction ->
                 val fromAddress = timedTransaction.inputs[0].address
                 if (findOwnerShard(fromAddress) == membershipName) {
@@ -185,25 +181,5 @@ private fun CoroutineScope.startReceivingPaxosMessages(atomicBroadcast: AtomicBr
                 }
             }
         }
-    }
-}
-
-fun sendOwnLedger(address: String) {
-    println("server $serverAddress is sending own ledger on behalf of $membershipName to $address")
-    val ownLedger: MutableList<TimedTransactionGRPC> = mutableListOf(
-        TimedTransactionGRPC(
-            membershipName,
-            mutableListOf(),
-            mutableListOf(),
-            timestamp = 0,
-        )
-    )
-    transactionsMap.values.forEach {
-        ownLedger.addAll(it)
-    }
-
-    val owner = stubMap[address]!!
-    runBlocking {
-        owner.consensusPostLedger(toProto(ownLedger))
     }
 }

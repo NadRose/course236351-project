@@ -10,7 +10,6 @@ package cs236351.transactionManager;
 service TransactionManagerService {
   rpc findOwner(AddressRequest) returns (AddressRequest) {}
   rpc consensusAddProposal(ConsensusMessage) returns (Response) {}
-  rpc consensusPostLedger(TimedTransactionList) returns (Response) {}
   rpc submitTransaction(Transaction) returns (Response) {}
   rpc makeTransfer(Transfer) returns (Response) {}
   rpc submitAtomicTransaction(TransactionList) returns (Response) {}

@@ -133,7 +133,7 @@ class TransactionManagerService {
             address = serverAddress
             this.limit = limit ?: Int.MAX_VALUE
         }
-        val owner = stubMap[findOwner(serverAddress)]!!
+        val owner = stubMap[serverAddress]!!
         return@runBlocking owner.getLedger(request).transactionListList.map { fromProto(it) }
 //        try {
 //            for (i in 1..retry) {

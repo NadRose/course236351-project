@@ -5,9 +5,12 @@ import cs236351.transactionManager.TransactionManagerServiceGrpcKt.TransactionMa
 import kotlinx.coroutines.channels.Channel
 import multipaxos.AtomicBroadcast
 import multipaxos.Proposer
+import rest_api.membershipName
 import rest_api.repository.model.fromProto
 import rest_api.repository.model.toProto
+import rest_api.serverAddress
 import rest_api.shards
+import rest_api.stubMap
 import zookeeper.kotlin.zookeeper.ZooKeeperKt
 import java.util.*
 import rest_api.repository.model.TimedTransactionGRPC as ModelTimedTransaction
@@ -51,12 +54,7 @@ class TransactionManagerRPCService(
     private val atomicBroadcast: AtomicBroadcast<List<ModelTimedTransaction>>
 ) : TransactionManagerServiceCoroutineImplBase() {
 
-    private val ledger = sortedSetOf<ModelTimedTransaction>()
-    private var senders = mutableSetOf<String>()
-    private val ledgerChan = Channel<String>(1)
-
     override suspend fun findOwner(request: AddressRequest): AddressRequest {
-        println("rpc finding owner of ${request.address}")
         val shard = findOwnerShard(request.address)
         return addressRequest {
             address = zkClient.getChildren("/$shard") {}.first[0]
@@ -64,24 +62,12 @@ class TransactionManagerRPCService(
     }
 
     override suspend fun consensusAddProposal(request: ConsensusMessage): Response {
+        println("proposer $serverAddress has received a message")
         proposer.addProposal(request.message)
+        println("proposer $serverAddress proposed a message")
         return response {
             type = ResponseEnum.SUCCESS
         }
-    }
-
-    override suspend fun consensusPostLedger(request: TimedTransactionList): Response {
-        val lst = fromProto(request)
-        val senderName = lst[0].txId
-        println("ledger received from sender: $senderName")
-        println("current senders are $senders")
-        if (senderName in senders)
-            return response {}
-        val smallLedger = lst.toMutableList()
-        smallLedger.removeAt(0)
-        ledger.addAll(smallLedger)
-        ledgerChan.send(senderName)
-        return response {}
     }
 
     override suspend fun submitTransaction(request: Transaction): Response {
@@ -188,28 +174,30 @@ class TransactionManagerRPCService(
     }
 
     override suspend fun getTxHistory(request: AddressRequest): TimedTransactionList {
+        if (request.address == "All") {
+            val ownLedger = mutableListOf<ModelTimedTransaction>()
+            transactionsMap.values.forEach {
+                ownLedger.addAll(it)
+            }
+            return toProto(ownLedger)
+        }
         val slicedList = transactionsMap.getOrElse(request.address) { sortedSetOf() }.take(request.limit)
         return toProto(slicedList)
     }
 
     override suspend fun getLedger(request: AddressRequest): TimedTransactionList {
-        val tx = ModelTimedTransaction(
-            request.address,
-            mutableListOf(),
-            mutableListOf(),
-            0,
-        )
-        atomicBroadcast.send(listOf(tx))
-        senders = mutableSetOf()
-
-        println("server is waiting for responders")
-        for (shard in ledgerChan) {
-            println(" response from server $shard")
-            senders.add(shard)
-            println(" number of responses: ${senders.size}")
-            if (senders.size == shards.size) break
+        val transactionSet = sortedSetOf<ModelTimedTransaction>()
+        transactionsMap.mapValues { transactionSet.addAll(it.value) }
+        shards.forEach {
+            if (it != membershipName) {
+                val ownerAddress = zkClient.getChildren("/$it") {}.first[0]
+                val ownerStub = stubMap[ownerAddress]!!
+                val requestToSend = addressRequest { address = "All" }
+                val smallLedger = fromProto(ownerStub.getTxHistory(requestToSend))
+                transactionSet.addAll(smallLedger)
+            }
         }
-        val slicedList = ledger.take(request.limit)
+        val slicedList = transactionSet.take(request.limit)
         return toProto(slicedList)
     }
 
