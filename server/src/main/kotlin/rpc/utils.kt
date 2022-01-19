@@ -3,6 +3,8 @@ package rpc
 import cs236351.transactionManager.*
 import rest_api.repository.model.TimedTransactionGRPC
 import rest_api.repository.model.fromProto
+import java.math.BigInteger
+import java.security.MessageDigest
 import java.util.*
 
 // convert the list to TimedTransactionGRPC and returns an empty list if not valid
@@ -24,4 +26,9 @@ fun isValidTxList(transactionList: List<Transaction>): MutableList<TimedTransact
         res.add(fromProto(transaction, UUID.randomUUID().toString(), System.currentTimeMillis()))
     }
     return res
+}
+
+fun md5(input:String): String {
+    val md = MessageDigest.getInstance("MD5")
+    return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
 }

@@ -3,11 +3,11 @@ package rpc
 import cs236351.transactionManager.*
 import cs236351.transactionManager.TransactionManagerServiceGrpcKt.TransactionManagerServiceCoroutineImplBase
 import kotlinx.coroutines.channels.Channel
-import main.shards
 import multipaxos.AtomicBroadcast
 import multipaxos.Proposer
 import rest_api.repository.model.fromProto
 import rest_api.repository.model.toProto
+import rest_api.shards
 import zookeeper.kotlin.zookeeper.ZooKeeperKt
 import java.util.*
 import rest_api.repository.model.TimedTransactionGRPC as ModelTimedTransaction
@@ -56,6 +56,7 @@ class TransactionManagerRPCService(
     private val ledgerChan = Channel<String>(1)
 
     override suspend fun findOwner(request: AddressRequest): AddressRequest {
+        println("rpc finding owner of ${request.address}")
         val shard = findOwnerShard(request.address)
         return addressRequest {
             address = zkClient.getChildren("/$shard") {}.first[0]
@@ -72,6 +73,8 @@ class TransactionManagerRPCService(
     override suspend fun consensusPostLedger(request: TimedTransactionList): Response {
         val lst = fromProto(request)
         val senderName = lst[0].txId
+        println("ledger received from sender: $senderName")
+        println("current senders are $senders")
         if (senderName in senders)
             return response {}
         val smallLedger = lst.toMutableList()
@@ -199,8 +202,11 @@ class TransactionManagerRPCService(
         atomicBroadcast.send(listOf(tx))
         senders = mutableSetOf()
 
+        println("server is waiting for responders")
         for (shard in ledgerChan) {
+            println(" response from server $shard")
             senders.add(shard)
+            println(" number of responses: ${senders.size}")
             if (senders.size == shards.size) break
         }
         val slicedList = ledger.take(request.limit)

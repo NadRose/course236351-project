@@ -1,7 +1,8 @@
-package main
+package rest_api
 
 import cs236351.transactionManager.TransactionManagerServiceGrpcKt
 import io.grpc.ManagedChannelBuilder
+import main.initPath
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
@@ -39,9 +40,7 @@ class SpringBootBoilerplateApplication
 
 suspend fun main(args: Array<String>) {
 
-    println(channels)
     // -------------------------------------------- http setup --------------------------------------------
-    println(System.getenv("HTTP_PORT"))
     System.setProperty("server.port", System.getenv("HTTP_PORT"))
     runApplication<SpringBootBoilerplateApplication>(*args)
 

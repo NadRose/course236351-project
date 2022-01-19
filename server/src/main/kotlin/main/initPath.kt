@@ -13,6 +13,7 @@ import org.apache.zookeeper.Watcher
 import org.apache.zookeeper.ZooKeeper
 import rest_api.repository.model.*
 import rpc.*
+import rest_api.*
 import zookeeper.kotlin.createflags.Ephemeral
 import zookeeper.kotlin.createflags.Persistent
 import zookeeper.kotlin.examples.makeConnectionString
@@ -127,7 +128,7 @@ suspend fun initPath() = coroutineScope {
 // Build gRPC server
     val transactionManagerRPCService = TransactionManagerRPCService(zkClient, proposer, atomicBroadcast)
 
-    val server = ServerBuilder.forPort(id)
+    val server = ServerBuilder.forPort(System.getenv("RPC_PORT")!!.toInt())
         .apply {
             addService(transactionManagerRPCService)
         }
@@ -188,6 +189,7 @@ private fun CoroutineScope.startReceivingPaxosMessages(atomicBroadcast: AtomicBr
 }
 
 fun sendOwnLedger(address: String) {
+    println("server $serverAddress is sending own ledger on behalf of $membershipName to $address")
     val ownLedger: MutableList<TimedTransactionGRPC> = mutableListOf(
         TimedTransactionGRPC(
             membershipName,
