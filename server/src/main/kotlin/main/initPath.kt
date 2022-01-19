@@ -33,8 +33,8 @@ suspend fun initPath() = coroutineScope {
 
     // -------------------------------------------- zookeeper setup --------------------------------------------
     BasicConfigurator.configure()
-    val zkSockets = Pair("zoo1.zk.local", 2181)
-//    val zkSockets = Pair("localhost", 2181)
+//    val zkSockets = Pair("zoo1.zk.local", 2181)
+    val zkSockets = Pair("localhost", 2181)
     val zkConnectionString = makeConnectionString(listOf(zkSockets))
 
     println("--- Connecting to ZooKeeper @ $zkConnectionString")
@@ -79,7 +79,9 @@ suspend fun initPath() = coroutineScope {
                     })
             }
 
-            override fun _deliver(byteString: ByteString) = listOf(biSerializer(byteString))
+            override fun _deliver(byteString: ByteString): List<List<TimedTransactionGRPC>> {
+                
+                return listOf(biSerializer(byteString)) }
         }
 
     /*
@@ -151,7 +153,8 @@ suspend fun initPath() = coroutineScope {
 
 private fun CoroutineScope.startReceivingPaxosMessages(atomicBroadcast: AtomicBroadcast<List<TimedTransactionGRPC>>) {
     launch {
-        for ((`seq#`, msg) in atomicBroadcast.stream) {
+        while (true){
+            val (`seq#`, msg) = atomicBroadcast.receive()
             println("Message #$`seq#`  received at server $serverAddress")
             msg.forEach { timedTransaction ->
                 val fromAddress = timedTransaction.inputs[0].address
