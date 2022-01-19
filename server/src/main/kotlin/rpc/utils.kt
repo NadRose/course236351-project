@@ -11,6 +11,7 @@ import java.util.*
 fun isValidTxList(transactionList: List<Transaction>): MutableList<TimedTransactionGRPC> {
     val isZeroTxList = transactionList[0].txId == "0"
     val txIdSet = mutableSetOf<String>()
+    val inputTxIdSet = mutableSetOf<String>()
     val res = mutableListOf<TimedTransactionGRPC>()
     for (transaction in transactionList) {
         if (isZeroTxList) {
@@ -18,12 +19,18 @@ fun isValidTxList(transactionList: List<Transaction>): MutableList<TimedTransact
                 return mutableListOf()
             }
         } else {
-            if (transaction.txId == "0" || !txIdSet.add(transaction.txId)) return mutableListOf()
+            if (transaction.txId == "0"
+                || inputTxIdSet.contains(transaction.txId)
+                || !txIdSet.add(transaction.txId)) return mutableListOf()
+
             transaction.inputsList.forEach { input ->
-                if (!txIdSet.add(input.txId)) return mutableListOf()
+                if (txIdSet.contains(input.txId)) return mutableListOf()
+                inputTxIdSet.add(input.txId)
+
             }
         }
-        res.add(fromProto(transaction, UUID.randomUUID().toString(), System.currentTimeMillis()))
+        val txId = if (transaction.txId === "0") md5(transaction.toString()) else transaction.txId
+        res.add(fromProto(transaction, txId, System.currentTimeMillis()))
     }
     return res
 }

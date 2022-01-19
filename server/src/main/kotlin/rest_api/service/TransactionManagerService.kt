@@ -16,9 +16,7 @@ import rpc.md5
 class TransactionManagerService {
 
     private fun findOwner(address: String): String = runBlocking {
-        println("finding owner for address $address")
         val owner = stubMap[serverAddress]!!
-        println("self rpc id is $serverAddress \n stub is ${stubMap[serverAddress]}")
         return@runBlocking owner.findOwner(addressRequest { this.address = address }).address
     }
 

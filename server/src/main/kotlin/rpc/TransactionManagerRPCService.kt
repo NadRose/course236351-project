@@ -44,7 +44,6 @@ val transactionsMap: HashMap<String, MutableSet<ModelTimedTransaction>> =
 
 fun findOwnerShard(address: String): String {
     val shardNum = address.toBigInteger().mod(shards.size.toBigInteger()).toInt()
-    println("owner is ${shards[shardNum]}")
     return shards[shardNum]
 }
 
@@ -154,7 +153,7 @@ class TransactionManagerRPCService(
         // under the assumption that all input utxo are valid and unrelated - meaning can be submitted atomically
         // or "Non-zero transaction list (all tx-id's are valid uuid)
         val txList = isValidTxList(request.transactionsList)
-        if (isValidTxList(request.transactionsList).isEmpty()) {
+        if (txList.isEmpty()) {
             return response {
                 type = ResponseEnum.FAILURE
                 message = "Failed to submit Tx list, list is not commit-able"

@@ -25,47 +25,43 @@ services:
       - ALLOW_ANONYMOUS_LOGIN=yes
       - ZOO_SERVERS=zoo1.zk.local:2888:3888
       - ZOO_LOG_LEVEL=DEBUG
-#
-#  transaction-manager-1:
-#    build:
-#      context: '.'
-#      dockerfile: 'Dockerfile'
-#    hostname: manager1.zk.local
-#    ports:
-#      - 9191:9191
-#      - 8191:8191
-#    networks:
-#      - zookeeper
-#    depends_on:
-#      - zookeeper1
-#    environment:
-#      - SERVER_ID=1
-#      - HTTP_PORT=8191
-#      - RPC_PORT=9191
-#      - MEMBERSHIP=SHARD_1
-#      - SHARDS_NUM=3
-#      - SERVERS_NUM=6
-#
+
+  transaction-manager-1:
+    build:
+      context: '.'
+      dockerfile: 'Dockerfile'
+    hostname: manager1.zk.local
+    ports:
+      - "8191:8191"
+    networks:
+      - zookeeper
+    depends_on:
+      - zookeeper1
+    environment:
+      - SERVER_ID=1
+      - HTTP_PORT=8191
+      - RPC_PORT=9191
+      - MEMBERSHIP=SHARD_1
+      - SHARDS_NUM=3
+      - SERVERS_NUM=9
+
 #  transaction-manager-2:
 #    build:
 #      context: '.'
 #      dockerfile: 'Dockerfile'
 #    hostname: manager2.zk.local
 #    ports:
-#      - 9192:9191
-#      - 8192:8191
+#      - "8192:8191"
 #    networks:
 #      - zookeeper
-#    depends_on:
-#      - transaction-manager-1
 #    environment:
 #      - SERVER_ID=2
 #      - HTTP_PORT=8191
 #      - RPC_PORT=9191
 #      - MEMBERSHIP=SHARD_2
-#      - SHARDS_NUM=3
-#      - SERVERS_NUM=4
-#
+#      - SHARDS_NUM=2
+#      - SERVERS_NUM=2
+
 #  transaction-manager-3:
 #    build:
 #      context: '.'
@@ -76,12 +72,10 @@ services:
 #      - 8193:8191
 #    networks:
 #      - zookeeper
-#    depends_on:
-#      - transaction-manager-2
 #    environment:
 #      - SERVER_ID=3
-#      - HTTP_PORT=8193
-#      - RPC_PORT=9193
+#      - HTTP_PORT=8191
+#      - RPC_PORT=9191
 #      - MEMBERSHIP=SHARD_3
 #      - SHARDS_NUM=3
 #      - SERVERS_NUM=4
@@ -96,30 +90,14 @@ services:
 #      - 8194:8191
 #    networks:
 #      - zookeeper
-#    depends_on:
-#      - transaction-manager-3
 #    environment:
 #      - SERVER_ID=4
-#      - HTTP_PORT=8194
-#      - RPC_PORT=9194
+#      - HTTP_PORT=8191
+#      - RPC_PORT=9191
 #      - MEMBERSHIP=SHARD_1
 #      - SHARDS_NUM=3
 #      - SERVERS_NUM=4
-  
-#  zookeeper2:
-#    image: docker.io/bitnami/zookeeper:3.7
-#    hostname: zoo2.zk.local
-#    ports:
-#      - 2182:2181
-#    volumes:
-#      - zookeeper2_data:/bitnami
-#    networks:
-#      - zookeeper
-#    environment:
-#      - ZOO_SERVER_ID=2
-#      - ALLOW_ANONYMOUS_LOGIN=yes
-#      - ZOO_SERVERS=zoo1.zk.local:2888:3888,zoo2.zk.local:2888:3888,zoo3.zk.local:2888:3888
-#
+
   zoonavigator:
     image: elkozmon/zoonavigator:1.1.1
     hostname: navigator.zk.local
