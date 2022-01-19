@@ -6,10 +6,7 @@ import rest_api.repository.model.Transfer as ModelTransfer
 import rest_api.repository.model.UTxO as ModelUTxO
 import rest_api.repository.model.TimedTransaction as ModelTimedTransaction
 import kotlinx.coroutines.runBlocking
-import main.retry
-import main.serverAddress
-import main.stubMap
-import main.timeout
+import main.*
 import org.springframework.stereotype.Service
 import rest_api.repository.model.fromProto
 import rest_api.repository.model.toProto
@@ -20,7 +17,9 @@ import java.util.concurrent.TimeUnit
 class TransactionManagerService {
 
     private fun findOwner(address: String): String = runBlocking {
+        println("finding owner for address $address")
         val owner = stubMap[serverAddress]!!
+        println("self rpc stub is ${stubMap[serverAddress]}")
         return@runBlocking owner.findOwner(addressRequest { this.address = address }).address
     }
 
@@ -75,6 +74,7 @@ class TransactionManagerService {
     fun getUTxOs(address: String): List<ModelUTxO> {
         try {
             for (i in 1..retry) {
+                println("finding utxo for address $address")
                 runBlocking {
                     val request = addressRequest {
                         this.address = address

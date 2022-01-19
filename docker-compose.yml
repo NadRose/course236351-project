@@ -25,47 +25,47 @@ services:
       - ALLOW_ANONYMOUS_LOGIN=yes
       - ZOO_SERVERS=zoo1.zk.local:2888:3888
       - ZOO_LOG_LEVEL=DEBUG
-
-  transaction-manager-1:
-    build:
-      context: '.'
-      dockerfile: 'Dockerfile'
-    hostname: manager1.zk.local
-    ports:
-      - 9191:9191
-      - 8191:8191
-    networks:
-      - zookeeper
-    depends_on:
-      - zookeeper1
-    environment:
-      - SERVER_ID=1
-      - HTTP_PORT=8191
-      - RPC_PORT=9191
-      - MEMBERSHIP=SHARD_1
-      - SHARDS_NUM=3
-      - SERVERS_NUM=6
-
-  transaction-manager-2:
-    build:
-      context: '.'
-      dockerfile: 'Dockerfile'
-    hostname: manager2.zk.local
-    ports:
-      - 9192:9191
-      - 8192:8191
-    networks:
-      - zookeeper
-    depends_on:
-      - transaction-manager-1
-    environment:
-      - SERVER_ID=2
-      - HTTP_PORT=8191
-      - RPC_PORT=9191
-      - MEMBERSHIP=SHARD_2
-      - SHARDS_NUM=3
-      - SERVERS_NUM=4
-
+#
+#  transaction-manager-1:
+#    build:
+#      context: '.'
+#      dockerfile: 'Dockerfile'
+#    hostname: manager1.zk.local
+#    ports:
+#      - 9191:9191
+#      - 8191:8191
+#    networks:
+#      - zookeeper
+#    depends_on:
+#      - zookeeper1
+#    environment:
+#      - SERVER_ID=1
+#      - HTTP_PORT=8191
+#      - RPC_PORT=9191
+#      - MEMBERSHIP=SHARD_1
+#      - SHARDS_NUM=3
+#      - SERVERS_NUM=6
+#
+#  transaction-manager-2:
+#    build:
+#      context: '.'
+#      dockerfile: 'Dockerfile'
+#    hostname: manager2.zk.local
+#    ports:
+#      - 9192:9191
+#      - 8192:8191
+#    networks:
+#      - zookeeper
+#    depends_on:
+#      - transaction-manager-1
+#    environment:
+#      - SERVER_ID=2
+#      - HTTP_PORT=8191
+#      - RPC_PORT=9191
+#      - MEMBERSHIP=SHARD_2
+#      - SHARDS_NUM=3
+#      - SERVERS_NUM=4
+#
 #  transaction-manager-3:
 #    build:
 #      context: '.'

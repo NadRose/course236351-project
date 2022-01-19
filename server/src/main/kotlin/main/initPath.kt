@@ -32,7 +32,8 @@ suspend fun initPath() = coroutineScope {
 
     // -------------------------------------------- zookeeper setup --------------------------------------------
     BasicConfigurator.configure()
-    val zkSockets = Pair("zoo1.zk.local", 2181)
+//    val zkSockets = Pair("zoo1.zk.local", 2181)
+    val zkSockets = Pair("localhost", 2181)
     val zkConnectionString = makeConnectionString(listOf(zkSockets))
 
     println("--- Connecting to ZooKeeper @ $zkConnectionString")
@@ -59,7 +60,7 @@ suspend fun initPath() = coroutineScope {
     }
 
     // Take the ID as the port number
-    val id = serverAddress.toInt()
+    val id = System.getenv("SERVER_ID")!!.toInt()
 
     // Init services
     val learnerService = LearnerService(this)
@@ -100,7 +101,7 @@ suspend fun initPath() = coroutineScope {
                     watchers += { _, _, _ -> println("watcher activated on $leaderRootPath"); addWatcher(observer) }
                 }.first
                 leader = if (zNodeList.isNotEmpty()) {
-                    zNodeList.last().toInt()
+                    extractServerId(zNodeList.last())
                 } else {
                     id
                 }
@@ -116,7 +117,7 @@ suspend fun initPath() = coroutineScope {
         id = id,
         omegaFD = omega,
         scope = this,
-        acceptors = channels.mapKeys { it.key.toInt() }.filterKeys { it != id },
+        acceptors = channels.mapKeys { extractServerId(it.key) }.filterKeys { it != id },
         thisLearner = learnerService,
     )
 

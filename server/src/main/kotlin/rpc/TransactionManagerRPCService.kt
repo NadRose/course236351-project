@@ -12,28 +12,36 @@ import zookeeper.kotlin.zookeeper.ZooKeeperKt
 import java.util.*
 import rest_api.repository.model.TimedTransactionGRPC as ModelTimedTransaction
 
-val utxoPool: HashMap<String, MutableList<UTxO>> = hashMapOf(
-    Pair("0", mutableListOf(uTxO { txId = "0"; address = "0" })),
-)
+val utxoPool: HashMap<String, MutableList<UTxO>> =
+    if (System.getenv("SERVER_ID")!!.toInt() == 1)
+        hashMapOf(
+            Pair("0", mutableListOf(uTxO { txId = "0"; address = "0" })),
+        )
+    else hashMapOf()
+
 val missingUtxoPool: HashMap<String, MutableList<UTxO>> = hashMapOf()
-val transactionsMap: HashMap<String, MutableSet<ModelTimedTransaction>> = hashMapOf(
-    Pair(
-        "0",
-        sortedSetOf(
-            ModelTimedTransaction(
-                txId = "0",
-                inputs = mutableListOf(),
-                outputs = mutableListOf(
-                    transfer { srcAddress = "0"; dstAddress = "0"; coins = Long.MAX_VALUE },
+val transactionsMap: HashMap<String, MutableSet<ModelTimedTransaction>> =
+    if (System.getenv("SERVER_ID")!!.toInt() == 1)
+        hashMapOf(
+            Pair(
+                "0",
+                sortedSetOf(
+                    ModelTimedTransaction(
+                        txId = "0",
+                        inputs = mutableListOf(),
+                        outputs = mutableListOf(
+                            transfer { dstAddress = "0"; coins = Long.MAX_VALUE },
+                        ),
+                        timestamp = System.currentTimeMillis()
+                    ),
                 ),
-                timestamp = System.currentTimeMillis()
             ),
-        ),
-    ),
-)
+        )
+    else hashMapOf()
 
 fun findOwnerShard(address: String): String {
     val shardNum = address.toBigInteger().mod(shards.size.toBigInteger()).toInt()
+    println("owner is ${shards[shardNum]}")
     return shards[shardNum]
 }
 
