@@ -11,6 +11,7 @@ import rest_api.repository.model.fromProto
 import rest_api.repository.model.toProto
 import rest_api.*
 import rpc.md5
+import java.util.*
 
 @Service
 class TransactionManagerService {
@@ -21,7 +22,7 @@ class TransactionManagerService {
     }
 
     fun submitTransaction(transaction: ModelTransaction, address: String): String = runBlocking {
-        val inputTxId = if (transaction.txId == "0") md5(transaction.toString()) else transaction.txId
+        val inputTxId = if (transaction.txId == "0") UUID.randomUUID().toString() else transaction.txId
         val transactionReq = ModelTransaction(inputTxId, transaction.inputs, transaction.outputs)
         val owner = stubMap[findOwner(address)]!!
         return@runBlocking owner.submitTransaction(toProto(transactionReq)).toString()
@@ -43,7 +44,7 @@ class TransactionManagerService {
     }
 
     fun makeTransfer(transfer: ModelTransfer, address: String): String = runBlocking {
-        val inputTxId = md5(transfer.toString())
+        val inputTxId = UUID.randomUUID().toString()
         val owner = stubMap[findOwner(address)]!!
         return@runBlocking owner.makeTransfer(toProto(transfer, address, inputTxId)).toString()
 //        val inputTxId = UUID.randomUUID().toString()

@@ -29,13 +29,13 @@ fun isValidTxList(transactionList: List<Transaction>): MutableList<TimedTransact
 
             }
         }
-        val txId = if (transaction.txId === "0") md5(transaction.toString()) else transaction.txId
+        val txId = if (transaction.txId === "0") UUID.randomUUID().toString() else transaction.txId
         res.add(fromProto(transaction, txId, System.currentTimeMillis()))
     }
     return res
 }
 
-fun md5(input:String): String {
-    val md = MessageDigest.getInstance("MD5")
-    return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
-}
+//fun md5(input:String): String {
+//    val md = MessageDigest.getInstance("MD5")
+//    return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
+//}
