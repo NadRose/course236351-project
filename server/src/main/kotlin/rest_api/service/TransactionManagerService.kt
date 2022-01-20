@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service
 import rest_api.repository.model.fromProto
 import rest_api.repository.model.toProto
 import rest_api.*
-import rpc.md5
 import java.util.*
 
 @Service
