@@ -26,165 +26,159 @@ services:
       - ZOO_SERVERS=zoo1.zk.local:2888:3888
       - ZOO_LOG_LEVEL=DEBUG
 
-#  transaction-manager-1:
-#    build:
-#      context: '.'
-#      dockerfile: 'Dockerfile'
-#    hostname: manager1.zk.local
-#    ports:
-#      - "8191:8191"
-#    networks:
-#      - zookeeper
-#    depends_on:
-#      - zookeeper1
-#    environment:
-#      - SERVER_ID=1
-#      - HTTP_PORT=8191
-#      - RPC_PORT=9191
-#      - MEMBERSHIP=SHARD_1
-#      - SHARDS_NUM=3
-#      - SERVERS_NUM=9
-#
-#  transaction-manager-2:
-#    build:
-#      context: '.'
-#      dockerfile: 'Dockerfile'
-#    hostname: manager2.zk.local
-#    ports:
-#      - "8192:8191"
-#    networks:
-#      - zookeeper
-#    depends_on:
-#      - zookeeper1
-#    environment:
-#      - SERVER_ID=2
-#      - HTTP_PORT=8191
-#      - RPC_PORT=9191
-#      - MEMBERSHIP=SHARD_1
-#      - SHARDS_NUM=3
-#      - SERVERS_NUM=9
-#
-#  transaction-manager-3:
-#    build:
-#      context: '.'
-#      dockerfile: 'Dockerfile'
-#    hostname: manager3.zk.local
-#    ports:
-#      - "8193:8191"
-#    networks:
-#      - zookeeper
-#    depends_on:
-#      - zookeeper1
-#    environment:
-#      - SERVER_ID=3
-#      - HTTP_PORT=8191
-#      - RPC_PORT=9191
-#      - MEMBERSHIP=SHARD_1
-#      - SHARDS_NUM=3
-#      - SERVERS_NUM=9
-#
-#
-#  transaction-manager-4:
-#    build:
-#      context: '.'
-#      dockerfile: 'Dockerfile'
-#    hostname: manager4.zk.local
-#    ports:
-#      - "8194:8191"
-#    networks:
-#      - zookeeper
-#    environment:
-#      - SERVER_ID=4
-#      - HTTP_PORT=8191
-#      - RPC_PORT=9191
-#      - MEMBERSHIP=SHARD_2
-#      - SHARDS_NUM=3
-#      - SERVERS_NUM=9
-#
-#  transaction-manager-5:
-#    build:
-#      context: '.'
-#      dockerfile: 'Dockerfile'
-#    hostname: manager5.zk.local
-#    ports:
-#      - "8195:8191"
-#    networks:
-#      - zookeeper
-#    environment:
-#      - SERVER_ID=5
-#      - HTTP_PORT=8191
-#      - RPC_PORT=9191
-#      - MEMBERSHIP=SHARD_2
-#      - SHARDS_NUM=3
-#      - SERVERS_NUM=9
-#
-#  transaction-manager-6:
-#    build:
-#      context: '.'
-#      dockerfile: 'Dockerfile'
-#    hostname: manager6.zk.local
-#    ports:
-#      - "8196:8191"
-#    networks:
-#      - zookeeper
-#    environment:
-#      - SERVER_ID=6
-#      - HTTP_PORT=8191
-#      - RPC_PORT=9191
-#      - MEMBERSHIP=SHARD_2
-#      - SHARDS_NUM=3
-#      - SERVERS_NUM=9
-#
-#  transaction-manager-7:
-#    build:
-#      context: '.'
-#      dockerfile: 'Dockerfile'
-#    hostname: manager7.zk.local
-#    ports:
-#      - "8197:8191"
-#    networks:
-#      - zookeeper
-#    environment:
-#      - SERVER_ID=7
-#      - HTTP_PORT=8191
-#      - RPC_PORT=9191
-#      - MEMBERSHIP=SHARD_3
-#      - SHARDS_NUM=3
-#      - SERVERS_NUM=9
-#
-#  transaction-manager-8:
-#    build:
-#      context: '.'
-#      dockerfile: 'Dockerfile'
-#    hostname: manager8.zk.local
-#    ports:
-#      - "8198:8191"
-#    networks:
-#      - zookeeper
-#    environment:
-#      - SERVER_ID=8
-#      - HTTP_PORT=8191
-#      - RPC_PORT=9191
-#      - MEMBERSHIP=SHARD_3
-#      - SHARDS_NUM=3
-#      - SERVERS_NUM=9
-#
-#  transaction-manager-9:
-#    build:
-#      context: '.'
-#      dockerfile: 'Dockerfile'
-#    hostname: manager9.zk.local
-#    ports:
-#      - "8199:8191"
-#    networks:
-#      - zookeeper
-#    environment:
-#      - SERVER_ID=9
-#      - HTTP_PORT=8191
-#      - RPC_PORT=9191
-#      - MEMBERSHIP=SHARD_3
-#      - SHARDS_NUM=3
-#      - SERVERS_NUM=9
+  transaction-manager-1:
+    build: .
+    hostname: manager1.zk.local
+    ports:
+      - "8191:8191"
+    networks:
+      - zookeeper
+    depends_on:
+      - zookeeper1
+    environment:
+      - SERVER_ID=1
+      - HTTP_PORT=8191
+      - RPC_PORT=9191
+      - MEMBERSHIP=SHARD_1
+      - SHARDS_NUM=3
+      - SERVERS_NUM=9
+
+  transaction-manager-2:
+    image: transaction-manager
+    hostname: manager2.zk.local
+    ports:
+      - "8192:8191"
+    networks:
+      - zookeeper
+    depends_on:
+      - transaction-manager-1
+    environment:
+      - SERVER_ID=2
+      - HTTP_PORT=8191
+      - RPC_PORT=9191
+      - MEMBERSHIP=SHARD_1
+      - SHARDS_NUM=3
+      - SERVERS_NUM=9
+
+  transaction-manager-3:
+    image: transaction-manager
+    hostname: manager3.zk.local
+    ports:
+      - "8193:8191"
+    networks:
+      - zookeeper
+    depends_on:
+      - transaction-manager-1
+    environment:
+      - SERVER_ID=3
+      - HTTP_PORT=8191
+      - RPC_PORT=9191
+      - MEMBERSHIP=SHARD_1
+      - SHARDS_NUM=3
+      - SERVERS_NUM=9
+
+
+  transaction-manager-4:
+    image: transaction-manager
+    hostname: manager4.zk.local
+    ports:
+      - "8194:8191"
+    networks:
+      - zookeeper
+    depends_on:
+      - transaction-manager-1
+    environment:
+      - SERVER_ID=4
+      - HTTP_PORT=8191
+      - RPC_PORT=9191
+      - MEMBERSHIP=SHARD_2
+      - SHARDS_NUM=3
+      - SERVERS_NUM=9
+
+  transaction-manager-5:
+    image: transaction-manager
+    hostname: manager5.zk.local
+    ports:
+      - "8195:8191"
+    networks:
+      - zookeeper
+    depends_on:
+      - transaction-manager-1
+    environment:
+      - SERVER_ID=5
+      - HTTP_PORT=8191
+      - RPC_PORT=9191
+      - MEMBERSHIP=SHARD_2
+      - SHARDS_NUM=3
+      - SERVERS_NUM=9
+
+  transaction-manager-6:
+    image: transaction-manager
+    hostname: manager6.zk.local
+    ports:
+      - "8196:8191"
+    networks:
+      - zookeeper
+    depends_on:
+      - transaction-manager-1
+    environment:
+      - SERVER_ID=6
+      - HTTP_PORT=8191
+      - RPC_PORT=9191
+      - MEMBERSHIP=SHARD_2
+      - SHARDS_NUM=3
+      - SERVERS_NUM=9
+
+  transaction-manager-7:
+    image: transaction-manager
+    hostname: manager7.zk.local
+    ports:
+      - "8197:8191"
+    networks:
+      - zookeeper
+    depends_on:
+      - transaction-manager-1
+    environment:
+      - SERVER_ID=7
+      - HTTP_PORT=8191
+      - RPC_PORT=9191
+      - MEMBERSHIP=SHARD_3
+      - SHARDS_NUM=3
+      - SERVERS_NUM=9
+
+  transaction-manager-8:
+    image: transaction-manager
+    hostname: manager8.zk.local
+    ports:
+      - "8198:8191"
+    networks:
+      - zookeeper
+    depends_on:
+      - transaction-manager-1
+    environment:
+      - SERVER_ID=8
+      - HTTP_PORT=8191
+      - RPC_PORT=9191
+      - MEMBERSHIP=SHARD_3
+      - SHARDS_NUM=3
+      - SERVERS_NUM=9
+
+  transaction-manager-9:
+    image: transaction-manager
+    hostname: manager9.zk.local
+    ports:
+      - "8199:8191"
+    networks:
+      - zookeeper
+    depends_on:
+      - transaction-manager-1
+    environment:
+      - SERVER_ID=9
+      - HTTP_PORT=8191
+      - RPC_PORT=9191
+      - MEMBERSHIP=SHARD_3
+      - SHARDS_NUM=3
+      - SERVERS_NUM=9
 
   zoonavigator:
     image: elkozmon/zoonavigator:1.1.1
@@ -197,12 +191,6 @@ services:
       HTTP_PORT: 9000
       CONNECTION_ZKLOCAL1_NAME: ZooKeeper Server 1
       CONNECTION_ZKLOCAL1_CONN: zoo1.zk.local
-
-      #      CONNECTION_ZKLOCAL2_NAME: ZooKeeper Server 2
-      #      CONNECTION_ZKLOCAL2_CONN: zoo2.zk.local
-      #
-      #      CONNECTION_ZKLOCAL3_NAME: ZooKeeper Server 3
-      #      CONNECTION_ZKLOCAL3_CONN: zoo3.zk.local
 
       AUTO_CONNECT_CONNECTION_ID: ZKLOCAL1
 

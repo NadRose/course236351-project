@@ -33,8 +33,8 @@ suspend fun initPath() = coroutineScope {
 
     // -------------------------------------------- zookeeper setup --------------------------------------------
     BasicConfigurator.configure()
-//    val zkSockets = Pair("zoo1.zk.local", 2181)
-    val zkSockets = Pair("localhost", 2181)
+    val zkSockets = Pair("zoo1.zk.local", 2181)
+//    val zkSockets = Pair("localhost", 2181)
     val zkConnectionString = makeConnectionString(listOf(zkSockets))
 
     println("--- Connecting to ZooKeeper @ $zkConnectionString")
