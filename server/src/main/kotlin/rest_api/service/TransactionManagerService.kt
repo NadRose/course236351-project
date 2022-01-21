@@ -4,8 +4,6 @@ import cs236351.transactionManager.*
 import kotlinx.coroutines.*
 import rest_api.repository.model.Transaction as ModelTransaction
 import rest_api.repository.model.Transfer as ModelTransfer
-import rest_api.repository.model.UTxO as ModelUTxO
-import rest_api.repository.model.TimedTransaction as ModelTimedTransaction
 import org.springframework.stereotype.Service
 import rest_api.repository.model.fromProto
 import rest_api.repository.model.toProto
@@ -38,6 +36,7 @@ class TransactionManagerService {
                         retVal = "Operation failed with $e,\nPlease try again later."
                     } else {
                         print("trying to connect to a different server...attempt #$i.\n")
+                        Thread.sleep(5000)
                     }
                 }
             }

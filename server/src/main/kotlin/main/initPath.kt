@@ -80,37 +80,6 @@ suspend fun initPath() = coroutineScope {
             }
 
             override fun _deliver(byteString: ByteString) = listOf(biSerializer(byteString))
-//            override fun _deliver(byteString: ByteString): List<List<TimedTransactionGRPC>> {
-//                launch { deliverAux(byteString) }
-//                println("clearing list")
-//                toDeliver = mutableListOf()
-//                // wait for timeout or buffer to be full
-//                runBlocking {
-//                    println("entered blocking scope")
-//                    for (lst in chan1) {
-//                        println("received in channel $lst")
-//                        println("toDeliver size is ${toDeliver.size}")
-//                        toDeliver.add(lst)
-//                        println("toDeliver size is ${toDeliver.size}")
-//                        if (toDeliver.size > 1) {
-//                            println("ready to deliver $toDeliver")
-//                            return@runBlocking toDeliver
-//                        }
-//                        println("not ready to deliver")
-//                        return@runBlocking listOf<List<TimedTransactionGRPC>>()
-//                    }
-//                }
-//                return listOf()
-//            }
-//
-//            private suspend fun deliverAux(byteString: ByteString) {
-//                println("adding to channel")
-//                chan1.send(biSerializer(byteString))
-//                println("adding to channel ended")
-//            }
-//
-//            private val chan1 = Channel<List<TimedTransactionGRPC>>(1)
-//            private var toDeliver = mutableListOf<List<TimedTransactionGRPC>>()
         }
 
     /*

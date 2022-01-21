@@ -3,13 +3,18 @@ package rpc
 import cs236351.transactionManager.*
 import cs236351.transactionManager.TransactionManagerServiceGrpcKt.TransactionManagerServiceCoroutineImplBase
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.runBlocking
 import multipaxos.AtomicBroadcast
 import multipaxos.Proposer
 import rest_api.*
+import rest_api.repository.model.fromByteString
 import rest_api.repository.model.fromProto
+import rest_api.repository.model.toByteString
 import rest_api.repository.model.toProto
 import zookeeper.kotlin.zookeeper.ZooKeeperKt
 import java.util.*
+import kotlin.concurrent.schedule
+import kotlin.concurrent.timer
 import rest_api.repository.model.TimedTransactionGRPC as ModelTimedTransaction
 
 val utxoPool: HashMap<String, MutableList<UTxO>> =
@@ -39,6 +44,8 @@ val transactionsMap: HashMap<String, MutableSet<ModelTimedTransaction>> =
         )
     else hashMapOf()
 
+val proposedMessages = mutableListOf<ModelTimedTransaction>()
+
 fun findOwnerShard(address: String): String {
     val shardNum = address.toBigInteger().mod(shards.size.toBigInteger()).toInt()
     return shards[shardNum]
@@ -50,6 +57,16 @@ class TransactionManagerRPCService(
     private val atomicBroadcast: AtomicBroadcast<List<ModelTimedTransaction>>
 ) : TransactionManagerServiceCoroutineImplBase() {
 
+    val timer = Timer().schedule(delay = 0, period = 1000){
+        runBlocking {
+            if (proposedMessages.isNotEmpty()) {
+                proposer.addProposal(toByteString(proposedMessages))
+                println("Messages proposed.")
+                proposedMessages.clear()
+            }
+        }
+    }
+
     override suspend fun findOwner(request: AddressRequest): AddressRequest {
         val shard = findOwnerShard(request.address)
         return addressRequest {
@@ -58,19 +75,20 @@ class TransactionManagerRPCService(
     }
 
     override suspend fun consensusAddProposal(request: ConsensusMessage): Response {
-        println("proposer $serverAddress has received a message")
-        proposer.addProposal(request.message)
-        println("proposer $serverAddress proposed a message")
+        println("proposer $serverAddress has received a message.")
+        val proposedMessage = fromByteString(request.message)
+        proposedMessages.addAll(proposedMessage)
+        println("proposer $serverAddress added message to queue.")
         return response {
             type = ResponseEnum.SUCCESS
         }
     }
 
     override suspend fun submitTransaction(request: Transaction): Response {
-//        print("in submit $serverAddress")
-//        if (extractServerId(serverAddress) == 1){
-//            Thread.sleep(8000)
-//        }
+        if (extractServerId(serverAddress) == 1){
+            println("$serverAddress going to sleep...")
+            Thread.sleep(8000)
+        }
         val inputTxId = request.txId
         if (isTxExist(inputTxId, request.inputsList[0].address))
             return response { type = ResponseEnum.SUCCESS; message = inputTxId }
