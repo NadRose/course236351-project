@@ -43,7 +43,7 @@ class TransactionManagerService {
             }
             if (retVal != "") break
         }
-       return retVal
+        return retVal
     }
 
     fun makeTransfer(transfer: ModelTransfer, address: String): String {
@@ -54,7 +54,8 @@ class TransactionManagerService {
             runBlocking {
                 try {
                     val owner = stubMap[findOwner(address)]!!
-                    retVal = owner.withDeadlineAfter(timeout, TimeUnit.SECONDS).makeTransfer(toProto(transfer, address, inputTxId)).toString()
+                    retVal = owner.withDeadlineAfter(timeout, TimeUnit.SECONDS)
+                        .makeTransfer(toProto(transfer, address, inputTxId)).toString()
                 } catch (e: Exception) {
                     if (i == retry) {
                         retVal = "Operation failed with $e,\nPlease try again later."
@@ -68,93 +69,108 @@ class TransactionManagerService {
         return retVal
     }
 
-    fun submitAtomicTxList(transactionList: List<ModelTransaction>): String = runBlocking {
-        val owner = stubMap[serverAddress]!!
-        return@runBlocking owner.submitAtomicTransaction(toProto(transactionList)).toString()
-//        try {
-//            for (i in 1..retry) {
-//                runBlocking {
-//                    val owner = stubMap[serverAddress]!!
-//                    return@runBlocking owner.withDeadlineAfter(timeout.toLong(), TimeUnit.MILLISECONDS)
-//                        .submitAtomicTransaction(toProto(transactionList)).toString()
-//                }
-//            }
-//            return "Operation failed. Please try again later."
-//        } catch (e: Error) {
-//            return "Operation failed. Please try again later."
-//        }
+    fun submitAtomicTxList(transactionList: List<ModelTransaction>): String {
+        var retVal = ""
+        for (i in 1..retry) {
+            runBlocking {
+                try {
+                    val owner = stubMap[serverAddress]!!
+                    retVal =
+                        owner.withDeadlineAfter(timeout, TimeUnit.SECONDS)
+                            .submitAtomicTransaction(toProto(transactionList))
+                            .toString()
+                } catch (e: Exception) {
+                    if (i == retry) {
+                        retVal = "Operation failed with $e,\nPlease try again later."
+                    } else {
+                        print("trying to connect to a different server...attempt #$i.\n")
+                    }
+                }
+            }
+            if (retVal != "") break
+        }
+        return retVal
     }
 
-    fun getUTxOs(address: String): List<ModelUTxO> = runBlocking {
+    fun getUTxOs(address: String): Any {
         val request = addressRequest {
             this.address = address
         }
-        val owner = stubMap[findOwner(address)]!!
-        return@runBlocking owner.getUTxOs(request).utxoListList.map { fromProto(it) }
-//        try {
-//            for (i in 1..retry) {
-//                println("finding utxo for address $address")
-//                runBlocking {
-//                    val request = addressRequest {
-//                        this.address = address
-//                    }
-//                    val owner = stubMap[findOwner(address)]!!
-//                    return@runBlocking owner.getUTxOs(request).utxoListList.map { fromProto(it) }
-//                }
-//            }
-//            return listOf()
-//        } catch (e: Error) {
-//            return listOf()
-//        }
+        var retVal: Any = ""
+        for (i in 1..retry) {
+            runBlocking {
+                try {
+                    val owner = stubMap[findOwner(address)]!!
+                    retVal =
+                        owner.withDeadlineAfter(timeout, TimeUnit.SECONDS)
+                            .getUTxOs(request).utxoListList.map { fromProto(it) }
+
+                } catch (e: Exception) {
+                    if (i == retry) {
+                        retVal = "Operation failed with $e,\nPlease try again later."
+                    } else {
+                        print("trying to connect to a different server...attempt #$i.\n")
+                    }
+                }
+            }
+            if (retVal != "") break
+        }
+        return retVal
     }
 
-    fun getTxHistory(address: String, limit: Int?): List<ModelTimedTransaction> = runBlocking {
+    fun getTxHistory(address: String, limit: Int?): Any {
         val request = addressRequest {
             this.address = address
             this.limit = limit ?: Int.MAX_VALUE
         }
-        val owner = stubMap[findOwner(address)]!!
-        return@runBlocking owner.getTxHistory(request).transactionListList.map { fromProto(it) }
-//        try {
-//            for (i in 1..retry) {
-//                runBlocking {
-//                    val request = addressRequest {
-//                        this.address = address
-//                        this.limit = limit ?: Int.MAX_VALUE
-//                    }
-//                    val owner = stubMap[findOwner(address)]!!
-//                    return@runBlocking owner.withDeadlineAfter(timeout.toLong(), TimeUnit.MILLISECONDS)
-//                        .getTxHistory(request).transactionListList.map { fromProto(it) }
-//                }
-//            }
-//            return listOf()
-//        } catch (e: Error) {
-//            return listOf()
-//        }
+        var retVal: Any = ""
+        for (i in 1..retry) {
+            runBlocking {
+                try {
+                    val owner = stubMap[findOwner(address)]!!
+                    retVal =
+                        owner.withDeadlineAfter(timeout, TimeUnit.SECONDS)
+                            .getTxHistory(request).transactionListList.map { fromProto(it) }
+
+                } catch (e: Exception) {
+                    if (i == retry) {
+                        retVal = "Operation failed with $e,\nPlease try again later."
+                    } else {
+                        print("trying to connect to a different server...attempt #$i.\n")
+                    }
+                }
+            }
+            if (retVal != "") break
+        }
+        return retVal
+
     }
 
-    fun getLedgerHistory(limit: Int?): List<ModelTimedTransaction> = runBlocking {
+    fun getLedgerHistory(limit: Int?): Any {
         val request = addressRequest {
             address = serverAddress
             this.limit = limit ?: Int.MAX_VALUE
         }
-        val owner = stubMap[serverAddress]!!
-        return@runBlocking owner.getLedger(request).transactionListList.map { fromProto(it) }
-//        try {
-//            for (i in 1..retry) {
-//                runBlocking {
-//                    val request = addressRequest {
-//                        this.limit = limit ?: Int.MAX_VALUE
-//                    }
-//                    val owner = stubMap[findOwner(serverAddress)]!!
-//                    return@runBlocking owner.withDeadlineAfter(timeout.toLong(), TimeUnit.MILLISECONDS)
-//                        .getLedger(request).transactionListList.map { fromProto(it) }
-//                }
-//            }
-//            return listOf()
-//        } catch (e: Error) {
-//            return listOf()
-//        }
+        var retVal: Any = ""
+        for (i in 1..retry) {
+            runBlocking {
+                try {
+                    val owner = stubMap[serverAddress]!!
+                    retVal =
+                        owner.withDeadlineAfter(timeout, TimeUnit.SECONDS)
+                            .getLedger(request).transactionListList.map { fromProto(it) }
+
+                } catch (e: Exception) {
+                    if (i == retry) {
+                        retVal = "Operation failed with $e,\nPlease try again later."
+                    } else {
+                        print("trying to connect to a different server...attempt #$i.\n")
+                    }
+                }
+            }
+            if (retVal != "") break
+        }
+        return retVal
     }
 }
 

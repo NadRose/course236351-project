@@ -18,12 +18,12 @@ class TransactionManagerController(private val transactionManagerService: Transa
     fun makeTransfer(@RequestBody body: Transfer, @PathVariable address: String): String = transactionManagerService.makeTransfer(body, address)
 
     @GetMapping("/utxo/{address}")
-    fun getUTxOs(@PathVariable address: String): List<UTxO> = transactionManagerService.getUTxOs(address)
+    fun getUTxOs(@PathVariable address: String): Any = transactionManagerService.getUTxOs(address)
 
     @GetMapping("/tx/history/{address}")
-    fun getTxHistory(@PathVariable address: String, @RequestParam limit: Int?): List<TimedTransaction> = transactionManagerService.getTxHistory(address, limit)
+    fun getTxHistory(@PathVariable address: String, @RequestParam limit: Int?): Any = transactionManagerService.getTxHistory(address, limit)
 
     @GetMapping("/history")
-    fun getLedgerHistory( @RequestParam limit: Int?): List<TimedTransaction> = transactionManagerService.getLedgerHistory(limit)
+    fun getLedgerHistory( @RequestParam limit: Int?): Any = transactionManagerService.getLedgerHistory(limit)
 
 }
