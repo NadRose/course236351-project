@@ -5,18 +5,15 @@ import cs236351.transactionManager.TransactionManagerServiceGrpcKt.TransactionMa
 import kotlinx.coroutines.channels.Channel
 import multipaxos.AtomicBroadcast
 import multipaxos.Proposer
-import rest_api.membershipName
+import rest_api.*
 import rest_api.repository.model.fromProto
 import rest_api.repository.model.toProto
-import rest_api.serverAddress
-import rest_api.shards
-import rest_api.stubMap
 import zookeeper.kotlin.zookeeper.ZooKeeperKt
 import java.util.*
 import rest_api.repository.model.TimedTransactionGRPC as ModelTimedTransaction
 
 val utxoPool: HashMap<String, MutableList<UTxO>> =
-    if (System.getenv("SERVER_ID")!!.toInt() == 1)
+    if (membershipName == "SHARD_1")
         hashMapOf(
             Pair("0", mutableListOf(uTxO { txId = "0"; address = "0" })),
         )
@@ -24,7 +21,7 @@ val utxoPool: HashMap<String, MutableList<UTxO>> =
 
 val missingUtxoPool: HashMap<String, MutableList<UTxO>> = hashMapOf()
 val transactionsMap: HashMap<String, MutableSet<ModelTimedTransaction>> =
-    if (System.getenv("SERVER_ID")!!.toInt() == 1)
+    if (membershipName == "SHARD_1")
         hashMapOf(
             Pair(
                 "0",

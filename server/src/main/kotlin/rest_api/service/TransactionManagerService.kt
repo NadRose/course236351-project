@@ -1,45 +1,47 @@
 package rest_api.service
 
 import cs236351.transactionManager.*
+import io.grpc.StatusRuntimeException
+import kotlinx.coroutines.*
 import rest_api.repository.model.Transaction as ModelTransaction
 import rest_api.repository.model.Transfer as ModelTransfer
 import rest_api.repository.model.UTxO as ModelUTxO
 import rest_api.repository.model.TimedTransaction as ModelTimedTransaction
-import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Service
 import rest_api.repository.model.fromProto
 import rest_api.repository.model.toProto
 import rest_api.*
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 @Service
 class TransactionManagerService {
 
-    private fun findOwner(address: String): String = runBlocking {
+    private fun findOwner(address: String): String = runBlocking { //TODO should we retry here as well?
         val owner = stubMap[serverAddress]!!
         return@runBlocking owner.findOwner(addressRequest { this.address = address }).address
     }
 
-    fun submitTransaction(transaction: ModelTransaction, address: String): String = runBlocking {
+    fun submitTransaction(transaction: ModelTransaction, address: String): String {
         val inputTxId = if (transaction.txId == "0") UUID.randomUUID().toString() else transaction.txId
         val transactionReq = ModelTransaction(inputTxId, transaction.inputs, transaction.outputs)
-        val owner = stubMap[findOwner(address)]!!
-        return@runBlocking owner.submitTransaction(toProto(transactionReq)).toString()
+        var retVal = ""
 
-//        val inputTxId = if (transaction.txId == "0") UUID.randomUUID().toString() else transaction.txId
-//        val transactionReq = ModelTransaction(inputTxId, transaction.inputs, transaction.outputs)
-//        try {
-//            for (i in 1..retry) {
-//                runBlocking {
-//                    val owner = stubMap[findOwner(address)]!!
-//                    return@runBlocking owner.withDeadlineAfter(timeout.toLong(), TimeUnit.MILLISECONDS)
-//                        .submitTransaction(toProto(transactionReq)).toString()
-//                }
-//            }
-//            return "Operation failed. Please try again later."
-//        } catch (e: Error) {
-//            return "Operation failed. Please try again later."
-//        }
+        for (i in 1..retry) runBlocking {
+            try {
+                val owner = stubMap[findOwner(address)]!!
+                retVal = owner.withDeadlineAfter(timeout, TimeUnit.SECONDS)
+                    .submitTransaction(toProto(transactionReq)).toString()
+            } catch (e: Exception) {
+                if (i == retry) {
+                    retVal = "Operation failed with $e,\nPlease try again later."
+                } else {
+                    print("trying to connect to a different server...attempt #$i.\n")
+//                    Thread.sleep(10000)
+                }
+            }
+        }
+       return retVal
     }
 
     fun makeTransfer(transfer: ModelTransfer, address: String): String = runBlocking {
@@ -79,11 +81,11 @@ class TransactionManagerService {
     }
 
     fun getUTxOs(address: String): List<ModelUTxO> = runBlocking {
-            val request = addressRequest {
-                this.address = address
-            }
-            val owner = stubMap[findOwner(address)]!!
-            return@runBlocking owner.getUTxOs(request).utxoListList.map { fromProto(it) }
+        val request = addressRequest {
+            this.address = address
+        }
+        val owner = stubMap[findOwner(address)]!!
+        return@runBlocking owner.getUTxOs(request).utxoListList.map { fromProto(it) }
 //        try {
 //            for (i in 1..retry) {
 //                println("finding utxo for address $address")

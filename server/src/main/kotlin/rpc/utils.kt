@@ -35,6 +35,10 @@ fun isValidTxList(transactionList: List<Transaction>): MutableList<TimedTransact
     return res
 }
 
+fun extractServerId(name: String): Int {
+    return name.filter { it.isDigit() }.toInt()
+}
+
 //fun md5(input:String): String {
 //    val md = MessageDigest.getInstance("MD5")
 //    return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
