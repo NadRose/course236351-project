@@ -67,6 +67,10 @@ class TransactionManagerRPCService(
     }
 
     override suspend fun submitTransaction(request: Transaction): Response {
+//        print("in submit $serverAddress")
+//        if (extractServerId(serverAddress) == 1){
+//            Thread.sleep(8000)
+//        }
         val inputTxId = request.txId
         if (isTxExist(inputTxId, request.inputsList[0].address))
             return response { type = ResponseEnum.SUCCESS; message = inputTxId }
@@ -121,10 +125,16 @@ class TransactionManagerRPCService(
                 utxoToRemove.add(utxo)
             } else break
         }
+
         if (curSum > request.coins) {
             utxoPool[request.srcAddress]!!.add(uTxO {
                 txId = inputTxId.toString()
                 address = request.srcAddress
+            })
+            outputs.add(transfer {
+                srcAddress = request.srcAddress
+                dstAddress = request.srcAddress
+                coins = curSum - request.coins
             })
         }
 
